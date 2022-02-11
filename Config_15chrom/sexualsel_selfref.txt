@@ -1,0 +1,4 @@
+Population	Gen	Selection
+species1	-1	1
+species2	-1	1
+hyb	-1	if(My_Pref0-Courter_Signal0==0, 0.99, 0.01)
