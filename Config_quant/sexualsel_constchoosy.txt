@@ -1,4 +1,0 @@
-Population	Gen	Selection
-species1	-1	1
-species2	-1	1
-hyb	-1	exp( -pow( Courter_Signal0 - Pref0, 2 ) / pow(5,2) )

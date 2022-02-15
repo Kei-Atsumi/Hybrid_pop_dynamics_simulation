@@ -1,5 +1,0 @@
-Population	Gen	Selection
-species1	-1	1
-species2	-1	1
-hyb	-1	if(Courter_Signal0==0.5, 0.01, if(My_Pref0==0.5, 0.99, if(My_Pref0==Courter_Signal0, 0.745, 0.245)))
-
