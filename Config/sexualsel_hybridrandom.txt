@@ -1,0 +1,7 @@
+Population	Gen	Selection
+species1	-1	1
+species2	-1	1
+hyb	-1	if( Pref0 == 8, exp( -pow( Courter_Signal0 - Pref0, 2 ) / 400 ), exp( -pow( Courter_Signal0 - Pref0, 2 ) / pow( 8/(Pref0 - 8), 2 ) ) )
+
+
+

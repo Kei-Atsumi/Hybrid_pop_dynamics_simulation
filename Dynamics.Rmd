@@ -115,14 +115,13 @@ make_config <- function(
 #' @param gen: Generations
 #' @param mig: Migration in each >1 generation
 #' @param maten: Sampled mate
-make_bash <- function(
-  gset = "", sexsel = "", natsel = "", gen = 100, mig = 0, maten = 50) {
+make_bash <- function(gset = "", sexsel = "") {
   
   paste(
     "#!/bin/bash",
     "#PBS -N hybrid_simulation",
     "#PBS -q blade",
-    "#PBS -l nodes=1:ppn=1,mem=50gb,walltime=96:00:00",
+    "#PBS -l nodes=1:ppn=3,mem=50gb,walltime=96:00:00",
     "module load gcc",
     "REPS=101",
     "COUNTERA=0",
