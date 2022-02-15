@@ -465,7 +465,7 @@ for(ss in c("obl_posit", "obl_negat")){
   make_bash(gset = "learn", sexsel = ss) %>% 
       write(paste0("./Bash/", "learn_", ss, ".sbatch.sh"))
 
-  for(ns in c(0.1, 0.4, 0.7, 1)){
+  for(ns in c(0.1, 0.3, 0.7, 1)){
     make_config(gset = "learn", sexsel = ss, natsel = ns) %>% 
       write(paste0("./Config/learn_", ss, "_natsel", ns, ".cfg"))
     # #出力先フォルダ作成
@@ -550,7 +550,7 @@ for(ss in c("constchoosy", "hybridrandom")){
   make_bash(gset = "quant", sexsel = ss) %>% 
       write(paste0("./Bash/", "quant_", ss, ".sbatch.sh"))
   
-  for(ns in c(0.1, 0.4, 0.7, 1)){
+  for(ns in c(0.1, 0.3, 0.7, 1)){
     make_config(gset = "quant", sexsel = ss, natsel = ns) %>%
       write(paste0("./Config/quant_", ss, "_natsel", ns, ".cfg"))
     # #出力先フォルダ作成
