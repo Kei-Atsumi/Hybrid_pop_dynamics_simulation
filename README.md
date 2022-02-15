@@ -7,9 +7,6 @@ Simulate phenotypic dynamics of hybrid populations using Admix'em
 
 Configuration files for doing simulation
 
-### Config_shared
-
-Contains files that are used in any simulations
 
 - naturalsel_0.3.txt
   - Natural selection file, with s = 0.3
@@ -19,6 +16,8 @@ Contains files that are used in any simulations
   
 - samplegens.txt
   - Indicate generations that will be sampled during simulation
+
+
 
 ### Others
 
