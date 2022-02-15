@@ -1,0 +1,7 @@
+Phenotypes	Formula
+Sex	chr1_50748
+Fitness0	chr2_30677+chr3_69310
+Pref0	chr14_70664
+Pref1	chr15_23959
+Signal0	NA
+Hybridindex	chr4_22544+chr4_27453+chr5_27231+chr5_61583+chr6_42967+chr6_65165+chr7_56774+chr8_35805+chr8_59592+chr8_35805+chr9_42881+chr9_5191+chr10_26418+chr10_39879+chr11_83613+chr11_86472+chr12_61535+chr12_77511+chr13_35557+chr13_40585

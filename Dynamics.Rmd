@@ -11,7 +11,6 @@ output:
 
 # Setup
 
-Directory: `/mnt/c/Users/katsu/Dropbox/5_Simulation`
 
 Load packages & original functions
 
@@ -52,16 +51,19 @@ make_config <- function(
 
   paste(
     "RandomSeed\t=\t.1356",         
-    "MarkerFile\t=\tmarkers.txt",    #Marker File Containing marker info
-    "MarkerProbFile\t=\trecomb.txt", #Recombination probabilities
+    paste0("MarkerFile\t=\t/lustre/k.atsumi/Config/markers_", gset, ".txt"),
+    # "MarkerFile\t=\tmarkers.txt",    #Marker File Containing marker info
+    paste0("MarkerProbFile\t=\t/lustre/k.atsumi/Config/recomb_", gset, ".txt"),
+    # "MarkerProbFile\t=\trecomb.txt", #Recombination probabilities
     "UseUniformRec\t=\tyes",		# ignore predefined breakpoints above, use uniform.
     "IgnoreMarkerFreq\t=\tyes", #setting this option to yes will treat all markers as ancestry informative, regardless of their frequency specified in the markers file
     # "DumpNatSelProb\t=\tOff", 
-    "GeneFile\t=\tgenes.txt",
-    paste0("PhenotypeFile\t=\tphenotypes_", gset, ".txt"),
-    paste0("OutputFolder\t=\t/Users/katsu/Dropbox/5_Simulation/Result/", gset, "_", sexsel, "_natsel", natsel, "/0"), #Output folder
-    paste0("NaturalSelection\t=\t../Config_shared/naturalsel_", natsel, ".txt"),                     #Natural selection file
-    paste0("SexualSelection\t=\tsexualsel_", sexsel, ".txt"), #Sexual selection file
+    paste0("GeneFile\t=\t/lustre/k.atsumi/Config/genes_", gset, ".txt"),
+    # "GeneFile\t=\t/lustre/k.atsumi/Config/genes.txt",
+    paste0("PhenotypeFile\t=\t/lustre/k.atsumi/Config/phenotypes_", gset, ".txt"),
+    paste0("OutputFolder\t=\t/lustre/k.atsumi/Result/", gset, "_", sexsel, "_natsel", natsel, "/0"), #Output folder
+    paste0("NaturalSelection\t=\t/lustre/k.atsumi/Config/naturalsel_", natsel, ".txt"),                     #Natural selection file
+    paste0("SexualSelection\t=\t/lustre/k.atsumi/Config/sexualsel_", sexsel, ".txt"), #Sexual selection file
     #population names:
     "pop2_name\t=\tp2",
     "pop2_ancestry_label\t=\tp2",
@@ -94,7 +96,7 @@ make_config <- function(
     "avg_female_gamete\t=\t10",
     "std_female_gamete\t=\t3.16",
     "kids_per_female_func\t=\tPoisson",
-    "samplegens\t=\t../Config_shared/samplegens.txt", 
+    "samplegens\t=\t/lustre/k.atsumi/Config/samplegens.txt", 
     "MarkerOutput\t=\tOff", #On or Off
     paste0("SampleMate\t=\t", maten),
     "NumThreads\t=\t1",
@@ -268,7 +270,10 @@ paste("Total number of genes:", g_total)
 
 # Create gene file
 gf <- make_genome()
-write_tsv(gf, "./Config_discrete/genes.txt")
+write_tsv(gf, "./Config/genes_dis_link.txt")
+file.copy(
+  "./Config/genes_dis_link.txt", "./Config/genes_dis_unlink.txt", overwrite = T
+  )
 
 ```
 
@@ -308,20 +313,20 @@ Pheno <- data.frame(
 
 # dis_unlink
 Pheno[5,2] <- gf[2+g_chrom*14, "name"]
-write_tsv(Pheno, "./Config_discrete/phenotypes_dis_unlink.txt")
+write_tsv(Pheno, "./Config/phenotypes_dis_unlink.txt")
 
 # dis_link
 Pheno[5,2] <- gf[2+g_chrom*2, "name"]
-write_tsv(Pheno, "./Config_discrete/phenotypes_dis_link.txt")
+write_tsv(Pheno, "./Config/phenotypes_dis_link.txt")
 
 
 for(genomeset in c("dis_unlink", "dis_link")){
   for(ss in c("speriorhyb", "disruptive", "flip", "heterorandom", "pdominance", "recessive", "selfref")){
     for(ns in c(0.3, 1)){
       make_config(gset = genomeset, sexsel = ss, natsel = ns) %>% 
-        write(paste0("./Config_discrete/", genomeset, "_", ss, "_natsel", ns, ".cfg"))
-      #出力先フォルダ作成
-      dir.create(paste0("/Users/katsu/Dropbox/5_Simulation/Result/", genomeset, "_", ss, "_natsel", ns))
+        write(paste0("./Config/", genomeset, "_", ss, "_natsel", ns, ".cfg"))
+      # #出力先フォルダ作成
+      # dir.create(paste0("/Users/katsu/Dropbox/5_Simulation/Result/", genomeset, "_", ss, "_natsel", ns))
     }}}
 
 
@@ -336,13 +341,13 @@ paste(
   sep = "\n"  #改行
   ) %>% 
   cat(
-    ., "\n", file = "./Config_discrete/config_marker.txt", 
+    ., "\n", file = "./Config/config_marker_dis_link.txt", 
     append = FALSE  #Renew file
     )
 
 for(c in 1:chrom_n){　#Repeat chromosome size
   cat(
-    chrom_size, "\n", file = "./Config_discrete/config_marker.txt",
+    chrom_size, "\n", file = "./Config/config_marker_dis_link.txt",
     append = TRUE   #Add to existence file
     )
   }
@@ -353,14 +358,17 @@ paste(
   0,                 #Pop 1 allele freq SD
   "1.0",               #Pop 2 allele freq
   0,                 #Pop 2 allele freq SD
-  "markers.txt",     #marker file name
+  "markers_dis_link.txt",     #marker file name
   "y",                 #Reconbination file
   4,                 #Reconbination N
   5,                 #Male female difference
-  "recomb.txt",      #recombination file
+  "recomb_dis_link.txt",      #recombination file
   sep = "\n"
   ) %>% 
-  cat(., "\n", file = "./Config_discrete/config_marker.txt", append = TRUE)
+  cat(., "\n", file = "./Config/config_marker_dis_link.txt", append = TRUE)
+
+file.copy("./Config/recomb_dis_link.txt","./Config/recomb_dis_unlink.txt", overwrite = T)
+file.copy("./Config/markers_dis_link.txt","./Config/markers_dis_unlink.txt", overwrite = T)
 
 ```
 
@@ -386,7 +394,7 @@ paste("Total number of genes:", g_total)
 
 # Create gene file
 gf <- make_genome()
-write_tsv(gf, "./Config_learn/genes.txt")
+write_tsv(gf, "./Config/genes_learn.txt")
 
 # Phenotype file
 Pheno[5,2] <- paste0(
@@ -399,15 +407,15 @@ Pheno[5,2] <- paste0(
   gf[2+g_chrom*24, "name"], "+", gf[2+g_chrom*25, "name"], "+", 
   gf[2+g_chrom*26, "name"], "+", gf[2+g_chrom*27, "name"]
   )
-write_tsv(Pheno, "./Config_learn/phenotypes_learn.txt")  
+write_tsv(Pheno, "./Config/phenotypes_learn.txt")  
 
 # Config file
 for(ss in c("obl_posit", "obl_negat")){
   for(ns in c(0.3, 1)){
     make_config(gset = "learn", sexsel = ss, natsel = ns) %>% 
       write(paste0("./Config_learn/learn_", ss, "_natsel", ns, ".cfg"))
-    #出力先フォルダ作成
-    dir.create(paste0("/Users/katsu/Dropbox/5_Simulation/Result/learn_", ss, "_natsel", ns))
+    # #出力先フォルダ作成
+    # dir.create(paste0("/Users/katsu/Dropbox/5_Simulation/Result/learn_", ss, "_natsel", ns))
   }}
 
 
@@ -421,13 +429,13 @@ paste(
   sep = "\n"  #改行
   ) %>% 
   cat(
-    ., "\n", file = "./Config_learn/config_marker.txt", 
+    ., "\n", file = "./Config/config_marker_learn.txt", 
     append = FALSE  #Renew file
     )
 
 for(c in 1:chrom_n){　#Repeat chromosome size
   cat(
-    chrom_size, "\n", file = "./Config_learn/config_marker.txt",
+    chrom_size, "\n", file = "./Config/config_marker_learn.txt",
     append = TRUE   #Add to existence file
     )
   }
@@ -438,14 +446,14 @@ paste(
   0,                 #Pop 1 allele freq SD
   "1.0",               #Pop 2 allele freq
   0,                 #Pop 2 allele freq SD
-  "markers.txt",     #marker file name
+  "markers_learn.txt",     #marker file name
   "y",                 #Reconbination file
   4,                 #Reconbination N
   5,                 #Male female difference
-  "recomb.txt",      #recombination file
+  "recomb_learn.txt",      #recombination file
   sep = "\n"
   ) %>% 
-  cat(., "\n", file = "./Config_learn/config_marker.txt", append = TRUE)
+  cat(., "\n", file = "./Config/config_marker_learn.txt", append = TRUE)
 
 ```
 
@@ -468,7 +476,7 @@ paste("Total number of genes:", g_total)
 
 # Genes file
 gf <- make_genome()
-write_tsv(gf, "./Config_quant/genes.txt")
+write_tsv(gf, "./Config/genes_quant.txt")
 
 # Phenotype file
 Pheno[3,2] <- paste0(
@@ -481,15 +489,15 @@ Pheno[3,2] <- paste0(
   gf[2+g_chrom*40, "name"], "+", gf[2+g_chrom*41, "name"], "+", 
   gf[2+g_chrom*42, "name"], "+", gf[2+g_chrom*43, "name"]
   )
-write_tsv(Pheno, "./Config_quant/phenotypes_quant.txt")  
+write_tsv(Pheno, "./Config/phenotypes_quant.txt")  
 
 # Config file
 for(ss in c("constchoosy", "hybridrandom")){
   for(ns in c(0.3, 1)){
     make_config(gset = "quant", sexsel = ss, natsel = ns) %>%
-      write(paste0("./Config_quant/quant_", ss, "_natsel", ns, ".cfg"))
-    #出力先フォルダ作成
-    dir.create(paste0("/Users/katsu/Dropbox/5_Simulation/Result/quant_", ss, "_natsel", ns))
+      write(paste0("./Config/quant_", ss, "_natsel", ns, ".cfg"))
+    # #出力先フォルダ作成
+    # dir.create(paste0("/Users/katsu/Dropbox/5_Simulation/Result/quant_", ss, "_natsel", ns))
   }}
 
 # By running this file on Admix'em, marker file (`markers.txt`) and recombination file (`recomb.txt`) will be made
@@ -503,13 +511,13 @@ paste(
   sep = "\n"  #改行
   ) %>% 
   cat(
-    ., "\n", file = "./Config_quant/config_marker.txt", 
+    ., "\n", file = "./Config/config_marker_quant.txt", 
     append = FALSE  #Renew file
     )
 
 for(c in 1:chrom_n){　#Repeat chromosome size
   cat(
-    chrom_size, "\n", file = "./Config_quant/config_marker.txt",
+    chrom_size, "\n", file = "./Config/config_marker_quant.txt",
     append = TRUE   #Add to existence file
     )
   }
@@ -520,14 +528,14 @@ paste(
   0,                 #Pop 1 allele freq SD
   "1.0",               #Pop 2 allele freq
   0,                 #Pop 2 allele freq SD
-  "markers.txt",     #marker file name
+  "markers_quant.txt",     #marker file name
   "y",                 #Reconbination file
   4,                 #Reconbination N
   5,                 #Male female difference
-  "recomb.txt",      #recombination file
+  "recomb_quant.txt",      #recombination file
   sep = "\n"
   ) %>% 
-  cat(., "\n", file = "./Config_quant/config_marker.txt", append = TRUE)
+  cat(., "\n", file = "./Config/config_marker_quant.txt", append = TRUE)
 
 ```
 
