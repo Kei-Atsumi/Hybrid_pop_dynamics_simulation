@@ -13,7 +13,7 @@ while [ $COUNTERA -lt $REPS ]; do
  Y=`echo "$Y + 0.0001" | bc`
  echo $Y
  sed -i -e "s/$X/$Y/g" /lustre/k.atsumi/Config/dis_link_heterorandom_natsel0.1.cfg
- sed -i -e "s/$X/$Y/g" /lustre/k.atsumi/Config/dis_link_heterorandom_natsel0.4.cfg
+ sed -i -e "s/$X/$Y/g" /lustre/k.atsumi/Config/dis_link_heterorandom_natsel0.3.cfg
  sed -i -e "s/$X/$Y/g" /lustre/k.atsumi/Config/dis_link_heterorandom_natsel0.7.cfg
  sed -i -e "s/$X/$Y/g" /lustre/k.atsumi/Config/dis_link_heterorandom_natsel1.cfg
  let COUNTERB=COUNTERB+1

@@ -133,7 +133,7 @@ make_bash <- function(gset = "", sexsel = "") {
     " Y=`echo \"$Y + 0.0001\" | bc`",
     " echo $Y",
     paste0(" sed -i -e \"s/$X/$Y/g\" /lustre/k.atsumi/Config/", gset, "_", sexsel, "_natsel0.1.cfg"),
-    paste0(" sed -i -e \"s/$X/$Y/g\" /lustre/k.atsumi/Config/", gset, "_", sexsel, "_natsel0.4.cfg"),
+    paste0(" sed -i -e \"s/$X/$Y/g\" /lustre/k.atsumi/Config/", gset, "_", sexsel, "_natsel0.3.cfg"),
     paste0(" sed -i -e \"s/$X/$Y/g\" /lustre/k.atsumi/Config/", gset, "_", sexsel, "_natsel0.7.cfg"),
     paste0(" sed -i -e \"s/$X/$Y/g\" /lustre/k.atsumi/Config/", gset, "_", sexsel, "_natsel1.cfg"),
     " let COUNTERB=COUNTERB+1",
@@ -374,7 +374,7 @@ for(genomeset in c("dis_unlink", "dis_link")){
     make_bash(gset = genomeset, sexsel = ss) %>% 
       write(paste0("./Bash/", genomeset, "_", ss, ".sbatch.sh"))
     
-    for(ns in c(0.1, 0.4, 0.7, 1)){
+    for(ns in c(0.1, 0.3, 0.7, 1)){
       make_config(gset = genomeset, sexsel = ss, natsel = ns) %>% 
         write(paste0("./Config/", genomeset, "_", ss, "_natsel", ns, ".cfg"))
       
