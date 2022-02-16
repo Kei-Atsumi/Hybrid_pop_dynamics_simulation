@@ -18,12 +18,12 @@ while [ $COUNTERA -lt $REPS ]; do
  sed -i -e "s/$X/$Y/g" /lustre/k.atsumi/Config/learn_obl_negat_natsel1.cfg
  let COUNTERB=COUNTERB+1
  sed -i -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" /lustre/k.atsumi/Config/learn_obl_negat_natsel0.1.cfg
- sed -i -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" /lustre/k.atsumi/Config/learn_obl_negat_natsel0.4.cfg
+ sed -i -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" /lustre/k.atsumi/Config/learn_obl_negat_natsel0.3.cfg
  sed -i -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" /lustre/k.atsumi/Config/learn_obl_negat_natsel0.7.cfg
  sed -i -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" /lustre/k.atsumi/Config/learn_obl_negat_natsel1.cfg
  echo $X
  /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/learn_obl_negat_natsel0.1.cfg
- /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/learn_obl_negat_natsel0.4.cfg
+ /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/learn_obl_negat_natsel0.3.cfg
  /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/learn_obl_negat_natsel0.7.cfg
  /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/learn_obl_negat_natsel1.cfg
  X=`echo "$X + 0.0001" | bc`
