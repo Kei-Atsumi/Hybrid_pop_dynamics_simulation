@@ -1,7 +1,7 @@
 #!/bin/bash
-#PBS -N hybrid_simulation
+#PBS -N hybsim__learn_obl_negat
 #PBS -q blade
-#PBS -l nodes=1:ppn=3,mem=50gb,walltime=96:00:00
+#PBS -l nodes=2:ppn=24,mem=60gb,walltime=48:00:00
 module load gcc
 REPS=101
 COUNTERA=0
