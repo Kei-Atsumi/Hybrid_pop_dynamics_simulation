@@ -1,7 +1,7 @@
 #!/bin/bash
-#PBS -N hybsim__learn_obl_posit
+#PBS -N hyb__learn_obl_posit
 #PBS -q blade
-#PBS -l nodes=2:ppn=24,mem=60gb,walltime=48:00:00
+#PBS -l nodes=1:ppn=24,mem=90gb,walltime=48:00:00
 module load gcc
 REPS=101
 COUNTERA=0
