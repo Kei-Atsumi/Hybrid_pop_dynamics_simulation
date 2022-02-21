@@ -131,7 +131,7 @@ make_bash <- function(gset = "", sexsel = "") {
     "while [ $COUNTERA -lt $REPS ]; do",
     " echo \"$COUNTERA\"",
     " Y=`echo \"$Y + 0.0001\" | bc`",
-    " echo $Y",
+    # " echo $Y",
     paste0(" sed -i -e \"s/$X/$Y/g\" /lustre/k.atsumi/Config/", gset, "_", sexsel, "_natsel0.1.cfg"),
     paste0(" sed -i -e \"s/$X/$Y/g\" /lustre/k.atsumi/Config/", gset, "_", sexsel, "_natsel0.3.cfg"),
     paste0(" sed -i -e \"s/$X/$Y/g\" /lustre/k.atsumi/Config/", gset, "_", sexsel, "_natsel0.7.cfg"),
@@ -141,7 +141,7 @@ make_bash <- function(gset = "", sexsel = "") {
     paste0(" sed -i -e \"s/rep${COUNTERA}dir/rep${COUNTERB}dir/g\" /lustre/k.atsumi/Config/", gset, "_", sexsel, "_natsel0.3.cfg"),
     paste0(" sed -i -e \"s/rep${COUNTERA}dir/rep${COUNTERB}dir/g\" /lustre/k.atsumi/Config/", gset, "_", sexsel, "_natsel0.7.cfg"),
     paste0(" sed -i -e \"s/rep${COUNTERA}dir/rep${COUNTERB}dir/g\" /lustre/k.atsumi/Config/", gset, "_", sexsel, "_natsel1.cfg"),
-    " echo $X",
+    # " echo $X",
     paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_natsel0.1.cfg"),
     paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_natsel0.3.cfg"),
     paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_natsel0.7.cfg"),
@@ -149,7 +149,7 @@ make_bash <- function(gset = "", sexsel = "") {
     " X=`echo \"$X + 0.0001\" | bc`",
     " let COUNTERA=COUNTERA+1",
     "done",
-    "wait",
+    # "wait",
     sep = "\n"
     ) %>% 
     return()
