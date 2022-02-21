@@ -121,7 +121,7 @@ make_bash <- function(gset = "", sexsel = "") {
     "#!/bin/bash",
     paste("#PBS -N hyb_", gset, sexsel, sep = "_"),
     "#PBS -q blade",
-    "#PBS -l nodes=1:ppn=24,mem=90gb,walltime=48:00:00",
+    "#PBS -l nodes=1:ppn=1,mem=90gb,walltime=48:00:00",
     "module load gcc",
     "REPS=101",
     "COUNTERA=0",

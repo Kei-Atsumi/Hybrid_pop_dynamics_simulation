@@ -1,7 +1,7 @@
 #!/bin/bash
 #PBS -N hyb__dis_unlink_speriorhyb
 #PBS -q blade
-#PBS -l nodes=1:ppn=24,mem=90gb,walltime=48:00:00
+#PBS -l nodes=1:ppn=1,mem=90gb,walltime=48:00:00
 module load gcc
 REPS=101
 COUNTERA=0
