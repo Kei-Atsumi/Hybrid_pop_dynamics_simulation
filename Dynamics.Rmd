@@ -146,6 +146,7 @@ make_bash <- function(gset = "", sexsel = "") {
     paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_natsel0.3.cfg &"),
     paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_natsel0.7.cfg &"),
     paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_natsel1.cfg &"),
+    "wait",
     " X=`echo \"$X + 0.0001\" | bc`",
     " let COUNTERA=COUNTERA+1",
     "done",

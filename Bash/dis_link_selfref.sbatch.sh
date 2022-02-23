@@ -24,6 +24,7 @@ while [ $COUNTERA -lt $REPS ]; do
  /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/dis_link_selfref_natsel0.3.cfg &
  /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/dis_link_selfref_natsel0.7.cfg &
  /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/dis_link_selfref_natsel1.cfg &
+wait
  X=`echo "$X + 0.0001" | bc`
  let COUNTERA=COUNTERA+1
 done
