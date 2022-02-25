@@ -1,4 +1,4 @@
-HaploidChromosomeNum = 15
+HaploidChromosomeNum = 16
 RandomSeed = 0.99
 Pop1AvgAlleleFreq = 1
 Pop1AvgAlleleFreqStdev = 0
@@ -79,3 +79,8 @@ Num	Position Percentage	Position Abs.	Freq. Pop 1	Freq. Pop 2
 Num	Position Percentage	Position Abs.	Freq. Pop 1	Freq. Pop 2
 1	0.0870782	8707.82	1	0
 2	0.470554	47055.4	1	0
+:chr 16	len = 100000	centromere = 100000
+
+Num	Position Percentage	Position Abs.	Freq. Pop 1	Freq. Pop 2
+1	0.160383	16038.3	1	0
+2	0.870717	87071.7	1	0

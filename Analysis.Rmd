@@ -1,0 +1,468 @@
+---
+title: "Analysis"
+author: "Keisuke Atsumi"
+date: "`r format(Sys.time(), '%Y %m %d')`"
+output:
+  html_document:
+    code_folding: hide
+    theme: united
+    toc: yes
+    toc_float: yes
+---
+
+# Setup
+
+
+Load packages & original functions
+
+- `summarise_simul` : Load & output simulation result
+- `make_config` : Make simulation config file
+
+```{r}
+
+rm(list=ls())  # reset workspace
+
+pacman::p_load(
+ openxlsx    # open excel file
+ , RcppRoll  # window functions
+ , tidyverse
+ , reshape2
+ , foreach   # Pararel
+ , magrittr  # Extend pipe
+ , knitr     # rmarkdown
+ , kableExtra # nice tables
+ , pander     # nice tables
+ , patchwork
+ )
+
+opts_chunk$set(prompt=TRUE, message=FALSE, comment="", warning = FALSE) 
+options(knitr.kable.NA = '', scipen=100)  # do not show numbers using exponential
+
+# Make inherit style table
+inherit_table <- tibble(
+  "rowname" = c("TT", "Tt", "tt"),
+  "PP" = NA, "Pp" = NA, "pp" = NA
+  ) %>% 
+  column_to_rownames("rowname")
+
+
+#' Title: load_simul
+#' Load simulation result
+#' @locus l: Number of locus
+#' @param sexsel: Sexual selection style
+#' @param gen: Generations to simulate
+load_simul <- function(l = "", sexsel = "", gen = 100, natsel = "") {
+  
+  gens <- c(5, seq(10, gen, by = 10))
+
+  # Load simulation data. Repeat for all generation files
+  foreach(g = gens, .combine = 'rbind') %do% {
+    # Read tab delimited files for phenotype
+    read_tsv(paste0("./Result/", l, "_", sexsel, "_natsel", natsel, "/0/Gen", g, "_phenotypes.txt")) %>%
+      # Use only hybrid population
+      filter(pop == 3) %>%
+      dplyr::select(contains("Signal")) %>% #id,Sex,contains("Pref"),-pop
+      # Add generation
+      mutate(Generation = g)
+    } %>% 
+    mutate(
+      Locus = locus %>% as.factor,
+      Naturalselection = str_c("Selection =", ns)
+      )
+  
+}
+
+
+#' Title: summarise_simul
+#' Make simulation configuration file
+#' @param d: Simulation data loaded by `load_simul` function
+summarise_simul <- function(d = "") {
+  
+  d %<>%  as.tibble(d) %>%  
+    mutate_at(vars(contains("Signal")), as.numeric) %>% 
+    mutate_all(as.factor)
+  
+  left_join(
+    # Count individuals grouped by generation and courter phenotype
+    d %>% 
+      group_by(Generation, Signal0, Naturalselection, Locus) %>% 
+      summarise(nPheno = length(Generation)), 
+    # Count individuals grouped by generation
+    d %>%
+      group_by(Generation, Naturalselection, Locus) %>% 
+      summarise(nGen = length(Generation))
+    ) %>% 
+    mutate(Freq = nPheno/nGen*100) %>% 
+    mutate_at("Signal0", as.factor) %>% 
+    ungroup() %>% 
+    return()
+}
+
+# Plot settings
+mytheme <- theme_bw() + # simple theme
+  theme(panel.grid.major.x = element_blank(),
+        axis.title = element_text(size=12),
+        axis.text = element_text(size=11),
+        axis.text.x = element_text(angle = 30, hjust = 1),
+        strip.text = element_text(size=12, lineheight=5.0),
+        strip.background = element_rect(fill = "lightgrey")
+        ) 
+
+cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#0072B2", "#D55E00", "#CC79A7")
+
+
+```
+
+
+
+## Result
+
+- 2 loci models : Preference and traits are determined by each 1 gene on different chromosome
+
+- 1 locus models : Preference and traits are determined by 1 gene
+
+### Disruptive sexual selection
+
+```{r}
+
+# Visualize inheritance pattern
+inherit_table$PP <- c(0.745,0.01,0.245)
+inherit_table$Pp <- c(0.495,0.01,0.495)
+inherit_table$pp <- c(0.245,0.01,0.745)
+inherit_table %>% 
+  kable("html", caption = "**Trait \\ Preference**") %>% 
+  kable_styling("striped", position = "left", full_width = F)
+
+cap = "Disatractive hybrids"
+
+dat <- foreach(locus = 1:2, .combine = 'rbind') %do% {
+  foreach(ns = c(0.3, 1), .combine = 'rbind') %do% {
+    load_simul(l = locus, sexsel = "disruptive", natsel = ns)
+    } } %>% 
+  summarise_simul()
+levels(dat$Locus) <- c("Linked", "Unlinked")
+
+dat %>% ggplot(aes(x = Generation, y = Freq, colour = Signal0, group = Signal0)) +
+  geom_line() +
+  labs(y = "Frequency (%)", colour = "Courter phenotype", title = cap) +
+  facet_grid(Naturalselection ~ Locus, scales = "free")
+
+```
+
+<div style="margin-bottom:40px;">
+</div>
+
+
+### Self-reference assortative matings 
+
+```{r}
+# Visualize inheritance pattern
+inherit_table$PP <- c(0.99,0.005,0.005)
+inherit_table$Pp <- c(0.005,0.99,0.005)
+inherit_table$pp <- c(0.005,0.005,0.99)
+# Output inheritance style table
+inherit_table %>% 
+  kable("html", caption = "**Trait \\ Preference**") %>% 
+  # here you can add the vertical line
+  column_spec (2:4, border_left = T, border_right = T) %>%
+  kable_styling(position = "left", full_width = F)
+
+cap = "Self-reference assortative mating"
+
+dat <- foreach(locus = 1:2, .combine = 'rbind') %do% {
+  foreach(ns = c(0.3, 1), .combine = 'rbind') %do% {
+    load_simul(l = locus, sexsel = "selfref", natsel = ns) 
+    } } %>% 
+  summarise_simul()
+levels(dat$Locus) <- c("Linked", "Unlinked")
+
+dat %>% ggplot(aes(x = Generation, y = Freq, colour = Signal0, group = Signal0)) +
+  geom_line() +
+  labs(y = "Frequency (%)", colour = "Courter phenotype", title = cap) +
+  facet_grid(Naturalselection ~ Locus, scales = "free")
+
+```
+
+<div style="margin-bottom:40px;">
+</div>
+
+### Recessive preference
+
+```{r}
+
+# Visualize inheritance pattern
+inherit_table$PP <- c(0.99,0.005,0.005)
+inherit_table$Pp <- c(0.005,0.005,0.99)
+inherit_table$pp <- c(0.005,0.005,0.99)
+inherit_table %>% 
+  kable("html", caption = "**Trait \\ Preference**") %>% 
+  # here you can add the vertical line
+  column_spec (2:4, border_left = T, border_right = T) %>%
+  kable_styling(position = "left", full_width = F)
+cap = "Recessive preference"
+
+dat <- foreach(locus = 1:2, .combine = 'rbind') %do% {
+  foreach(ns = c(0.3, 1), .combine = 'rbind') %do% {
+    load_simul(l = locus, sexsel = "recessive", natsel = ns)
+    } } %>% 
+  summarise_simul()
+levels(dat$Locus) <- c("Linked", "Unlinked")
+
+dat %>% ggplot(aes(x = Generation, y = Freq, colour = Signal0, group = Signal0)) +
+  geom_line() +
+  labs(y = "Frequency (%)", colour = "Courter phenotype", title = cap) +
+  facet_grid(Naturalselection ~ Locus, scales = "free")
+
+```
+
+<div style="margin-bottom:40px;">
+</div>
+
+### Pseudo-dominance
+
+```{r}
+
+# Visualize inheritance pattern
+inherit_table$PP <- c(0.99,0.005,0.005)
+inherit_table$Pp <- c(0.99,0.005,0.005)
+inherit_table$pp <- c(1/3,1/3,1/3)
+inherit_table %>% 
+  kable("html", caption = "**Trait \\ Preference**") %>% 
+  kable_styling("striped", position = "left", full_width = F)
+
+cap = "Pseudo-dominance"
+
+dat <- foreach(locus = 1:2, .combine = 'rbind') %do% {
+  foreach(ns = c(0.3, 1), .combine = 'rbind') %do% {
+    load_simul(l = locus, sexsel = "pdominance", natsel = ns)
+    } } %>% 
+  summarise_simul()
+levels(dat$Locus) <- c("Linked", "Unlinked")
+
+dat %>% ggplot(aes(x = Generation, y = Freq, colour = Signal0, group = Signal0)) +
+  geom_line() +
+  labs(y = "Frequency (%)", colour = "Courter phenotype", title = cap) +
+  facet_grid(Naturalselection ~ Locus, scales = "free")
+
+```
+
+Heterozygotes and recessive are favored (why??)
+
+<div style="margin-bottom:40px;">
+</div>
+
+### Heterozygotes mate randomly
+
+```{r}
+
+# Visualize inheritance pattern
+inherit_table$PP <- c(0.99,0.005,0.005)
+inherit_table$Pp <- c(1/3,1/3,1/3)
+inherit_table$pp <- c(0.005,0.005,0.99)
+inherit_table %>% 
+  kable("html", caption = "**Trait \\ Preference**") %>% 
+  kable_styling("striped", position = "left", full_width = F)
+
+cap = "Heterozygotes mate randomly"
+
+dat <- foreach(locus = 1:2, .combine = 'rbind') %do% {
+  foreach(ns = c(0.3, 1), .combine = 'rbind') %do% {
+    load_simul(l = locus, sexsel = "heterorandom", natsel = ns)
+    } } %>% 
+  summarise_simul()
+levels(dat$Locus) <- c("Linked", "Unlinked")
+
+dat %>% ggplot(aes(x = Generation, y = Freq, colour = Signal0, group = Signal0)) +
+  geom_line() +
+  labs(y = "Frequency (%)", colour = "Courter phenotype", title = cap) +
+  facet_grid(Naturalselection ~ Locus, scales = "free")
+
+```
+
+Recessive is favored, and heterozygote is not favored
+
+<div style="margin-bottom:40px;">
+</div>
+
+### Flip preference
+
+```{r}
+
+# Visualize inheritance pattern
+inherit_table$PP <- c(0.99,0.005,0.005)
+inherit_table$Pp <- c(0.49,0.01,0.49)
+inherit_table$pp <- c(0.005,0.005,0.99)
+inherit_table %>% 
+  kable("html", caption = "**Trait \\ Preference**") %>% 
+  kable_styling("striped", position = "left", full_width = F)
+
+cap = "Flip preference"
+
+dat <- foreach(locus = 1:2, .combine = 'rbind') %do% {
+  foreach(ns = c(0.3, 1), .combine = 'rbind') %do% {
+    load_simul(l = locus, sexsel = "flip", natsel = ns)
+    } } %>% 
+  summarise_simul()
+levels(dat$Locus) <- c("Linked", "Unlinked")
+
+dat %>% ggplot(aes(x = Generation, y = Freq, colour = Signal0, group = Signal0)) +
+  geom_line() +
+  labs(y = "Frequency (%)", colour = "Courter phenotype", title = cap) +
+  facet_grid(Naturalselection ~ Locus, scales = "free")
+
+```
+
+<div style="margin-bottom:40px;">
+</div>
+
+### Atractive hybrids
+
+```{r}
+
+# Visualize inheritance pattern
+inherit_table$PP <- c(0.245,0.745,0.01)
+inherit_table$Pp <- c(0.005,0.99,0.005)
+inherit_table$pp <- c(0.01,0.745,0.245)
+inherit_table %>% 
+  kable("html", caption = "**Trait \\ Preference**") %>% 
+  kable_styling("striped", position = "left", full_width = F)
+
+cap = "Atractive hybrids"
+
+dat <- foreach(locus = 1:2, .combine = 'rbind') %do% {
+  foreach(ns = c(0.3, 1), .combine = 'rbind') %do% {
+    load_simul(l = locus, sexsel = "speriorhyb", natsel = ns)
+    } } %>% 
+  summarise_simul()
+levels(dat$Locus) <- c("Linked", "Unlinked")
+
+dat %>% ggplot(aes(x = Generation, y = Freq, colour = Signal0, group = Signal0)) +
+  geom_line() +
+  labs(y = "Frequency (%)", colour = "Courter phenotype", title = cap) +
+  facet_grid(Naturalselection ~ Locus, scales = "free")
+
+```
+
+<div style="margin-bottom:40px;">
+</div>
+
+### Oblique positively learned preference
+
+```{r}
+
+cap = "Oblique positive"
+
+dat <- foreach(ns = c(0.3, 1), .combine = 'rbind') %do% {
+  load_simul(l = 8, sexsel = "obl_posit", natsel = ns)
+  } %>% 
+  summarise_simul()
+
+dat %>% ggplot(aes(x = Generation, y = Signal0, size = Freq)) +
+  geom_point() +
+  labs(y = "Frequency (%)", title = cap) +
+  facet_grid(Naturalselection ~ Locus, scales = "free")
+
+```
+
+<div style="margin-bottom:40px;">
+</div>
+
+### Oblique negatively learned preference
+
+```{r}
+
+cap = "Oblique negative"
+
+dat <- foreach(ns = c(0.3, 1), .combine = 'rbind') %do% {
+  load_simul(l = 8, sexsel = "obl_negat", natsel = ns)
+    } %>% 
+  summarise_simul()
+
+dat %>% ggplot(aes(x = Generation, y = Signal0, size = Freq)) +
+  geom_point() +
+  labs(y = "Frequency (%)", title = cap) +
+  facet_grid(Naturalselection ~ Locus, scales = "free")
+
+```
+
+<div style="margin-bottom:90px;">
+</div>
+
+# Complex models
+
+## Choosiness
+
+Here I set preference function as follows:
+
+$1/e^{(x-y)^2/z^2}$
+
+Where 
+
+- $x$, *the most favored courter phenotype*
+- $y$, *Courter phenotype*
+- $z$, *Promiscuity*, inverse of Choosiness
+
+Draw preference function in several promiscuity
+
+```{r}
+
+for(P in c(3, 4, 5, 6, 9, 15)){
+  curve(  
+    # Function
+    1/exp( ( x^2 )/( P^2 ) ) , 
+    # Plot range
+    from = -16, to = 16, ylim = c(0,1), 
+    main = paste("Promiscuity =", P)
+    )
+  }
+
+for(P in c(3, 4, 5, 6, 9, 11)){
+  curve(  
+    # Function
+    1-exp( -( x^2 )/( P^2 ) ) , 
+    # Plot range
+    from = -16, to = 16, ylim = c(0,1), 
+    main = paste("Promiscuity =", P)
+    )
+  }
+
+for(P in c(1:7,9:16)){
+  curve(  
+    # Function
+    1/exp( ( x^2 )/(  (8/(P-8)) ^2 ) ) , 
+    # Plot range
+    from = -16, to = 16, ylim = c(0,1), 
+    main = paste("Pref0 =", P)
+    )
+  }
+
+```
+
+
+```{r}
+
+# dat <- load_simul(l = 1, sexsel = "Disruptive", natsel = 0.3)
+# 
+# ggplot(
+#   summarise_simul(dat), 
+#   aes(x = Generation, y = Freq, colour = Signal0, group = Signal0)
+#   ) +
+#   geom_line() +
+#   labs(
+#     y = "Frequency (%)", colour = "Courter phenotype"
+#     )
+
+  # assign(
+  #   paste0("plot_d_", locus),
+  #   # Density graph
+  #   ggplot(dat, aes(x = Signal0, colour = Generation)) +
+  #     geom_density() +
+  #     labs(
+  #       x = "Courter phenotype", 
+  #       title = paste(locus, "locus |", cap)
+  #       )
+  #   )
+
+```
+
+

@@ -1,4 +1,0 @@
-Population	Gen	Selection
-species1	-1	1
-species2	-1	1
-hyb	-1	s=0.7, if(Fitness0==30, 1-s, 1)

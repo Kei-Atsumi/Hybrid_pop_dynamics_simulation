@@ -46,7 +46,7 @@ options(knitr.kable.NA = '', scipen=100)  # do not show numbers using exponentia
 #' @param mig: Migration in each >1 generation
 #' @param maten: Sampled mate
 make_config <- function(
-  gset = "", sexsel = "", natsel = "", gen = 100, mig = 0, maten = 50
+  gset = "", sexsel = "", bdmi = "", h = "", gen = 100, mig = 0, maten = 50
   ) {
 
   paste(
@@ -61,8 +61,8 @@ make_config <- function(
     paste0("GeneFile\t=\t/lustre/k.atsumi/Config/genes_", gset, ".txt"),
     # "GeneFile\t=\t/lustre/k.atsumi/Config/genes.txt",
     paste0("PhenotypeFile\t=\t/lustre/k.atsumi/Config/phenotypes_", gset, ".txt"),
-    paste0("OutputFolder\t=\t/lustre/k.atsumi/Result/", gset, "_", sexsel, "_natsel", natsel, "/0"), #Output folder
-    paste0("NaturalSelection\t=\t/lustre/k.atsumi/Config/naturalsel_", natsel, ".txt"),                     #Natural selection file
+    paste0("OutputFolder\t=\t/lustre/k.atsumi/Result/", gset, "_", sexsel, "_b", bdmi, "h", h, "/0"), #Output folder
+    paste0("NaturalSelection\t=\t/lustre/k.atsumi/Config/naturalsel_b", bdmi, "h", h, ".txt"),                     #Natural selection file
     paste0("SexualSelection\t=\t/lustre/k.atsumi/Config/sexualsel_", sexsel, ".txt"), #Sexual selection file
     #population names:
     "pop2_name\t=\tp2",
@@ -121,7 +121,7 @@ make_bash <- function(gset = "", sexsel = "") {
     "#!/bin/bash",
     paste("#PBS -N hyb", sexsel, gset, sep = "_"),
     "#PBS -q blade",
-    "#PBS -l nodes=1:ppn=4,mem=90gb,walltime=48:00:00",
+    "#PBS -l nodes=1:ppn=9,mem=90gb,walltime=48:00:00",
     "module load gcc",
     "REPS=101",
     "COUNTERA=0",
@@ -142,10 +142,15 @@ make_bash <- function(gset = "", sexsel = "") {
     paste0(" sed -i -e \"s/rep${COUNTERA}dir/rep${COUNTERB}dir/g\" /lustre/k.atsumi/Config/", gset, "_", sexsel, "_natsel0.7.cfg"),
     paste0(" sed -i -e \"s/rep${COUNTERA}dir/rep${COUNTERB}dir/g\" /lustre/k.atsumi/Config/", gset, "_", sexsel, "_natsel1.cfg"),
     # " echo $X",
-    paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_natsel0.1.cfg &"),
-    paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_natsel0.3.cfg &"),
-    paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_natsel0.7.cfg &"),
-    paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_natsel1.cfg &"),
+    paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_b0.1h0.1.cfg &"),
+    paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_b0.1h0.4.cfg &"),
+    paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_b0.1h0.8.cfg &"),
+    paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_b0.4h0.1.cfg &"),
+    paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_b0.4h0.4.cfg &"),
+    paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_b0.4h0.8.cfg &"),
+    paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_b0.8h0.1.cfg &"),
+    paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_b0.8h0.4.cfg &"),
+    paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_b0.8h0.8.cfg &"),
     "wait",
     " X=`echo \"$X + 0.0001\" | bc`",
     " let COUNTERA=COUNTERA+1",
@@ -157,78 +162,6 @@ make_bash <- function(gset = "", sexsel = "") {
   
   }
   
-
-# Make inherit style table
-inherit_table <- tibble(
-  "rowname" = c("TT", "Tt", "tt"),
-  "PP" = NA, "Pp" = NA, "pp" = NA
-  ) %>% 
-  column_to_rownames("rowname")
-
-
-#' Title: load_simul
-#' Load simulation result
-#' @locus l: Number of locus
-#' @param sexsel: Sexual selection style
-#' @param gen: Generations to simulate
-load_simul <- function(l = "", sexsel = "", gen = 100, natsel = "") {
-  
-  gens <- c(5, seq(10, gen, by = 10))
-
-  # Load simulation data. Repeat for all generation files
-  foreach(g = gens, .combine = 'rbind') %do% {
-    # Read tab delimited files for phenotype
-    read_tsv(paste0("./Result/", l, "_", sexsel, "_natsel", natsel, "/0/Gen", g, "_phenotypes.txt")) %>%
-      # Use only hybrid population
-      filter(pop == 3) %>%
-      dplyr::select(contains("Signal")) %>% #id,Sex,contains("Pref"),-pop
-      # Add generation
-      mutate(Generation = g)
-    } %>% 
-    mutate(
-      Locus = locus %>% as.factor,
-      Naturalselection = str_c("Selection =", ns)
-      )
-  
-}
-
-
-#' Title: summarise_simul
-#' Make simulation configuration file
-#' @param d: Simulation data loaded by `load_simul` function
-summarise_simul <- function(d = "") {
-  
-  d %<>%  as.tibble(d) %>%  
-    mutate_at(vars(contains("Signal")), as.numeric) %>% 
-    mutate_all(as.factor)
-  
-  left_join(
-    # Count individuals grouped by generation and courter phenotype
-    d %>% 
-      group_by(Generation, Signal0, Naturalselection, Locus) %>% 
-      summarise(nPheno = length(Generation)), 
-    # Count individuals grouped by generation
-    d %>%
-      group_by(Generation, Naturalselection, Locus) %>% 
-      summarise(nGen = length(Generation))
-    ) %>% 
-    mutate(Freq = nPheno/nGen*100) %>% 
-    mutate_at("Signal0", as.factor) %>% 
-    ungroup() %>% 
-    return()
-}
-
-# Plot settings
-mytheme <- theme_bw() + # simple theme
-  theme(panel.grid.major.x = element_blank(),
-        axis.title = element_text(size=12),
-        axis.text = element_text(size=11),
-        axis.text.x = element_text(angle = 30, hjust = 1),
-        strip.text = element_text(size=12, lineheight=5.0),
-        strip.background = element_rect(fill = "lightgrey")
-        ) 
-
-cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#0072B2", "#D55E00", "#CC79A7")
 
 ```
 
@@ -277,9 +210,9 @@ make_genome <- function(cn = chrom_n, gt = g_total) {
     position = runif(n = gt, min = 1, max = chrom_size) %>% 
         floor(), # Integers
     # First gene: Sex determination. S vs s. Hemizygous. Freq = 0.5
-    Allele1     = c("S", rep("I", 2*g_chrom), rep("A", gt - (2*g_chrom+1))),
+    Allele1     = c("S", rep("I", 2*g_chrom), rep("H", g_chrom), rep("A", gt - (3*g_chrom+1))),
     Allele1val  = c(1, rep(0.5, g_total - 1)),
-    Allele2     = c("s", rep("i", 2*g_chrom), rep("a", gt - (2*g_chrom+1))),
+    Allele2     = c("s", rep("i", 2*g_chrom), rep("h", g_chrom), rep("a", gt - (3*g_chrom+1))),
     Allele2val  = c(0, rep(0, gt - 1)),
     Mode        = c("Hemizygous", rep("Additive", gt - 1)),
     Freqal1pop1 = c(0.5, rep(1.0, gt - 1)),
@@ -312,7 +245,7 @@ g_pref_n  <- 1     # N of preference loci
 paste(g_pref_n, "locus determine mate preference peak, with constant choosiness")
 # trait_n   <- 1      # N of courter trait
 
-chrom_n <- 1 + 2 + 10 + g_trait_n + g_pref_n #Sex, BDMI, Hybrid index, Trait, Preference (Maximum number)
+chrom_n <- 1 + 2 + 1 + 10 + g_trait_n + g_pref_n #Sex, BDMI, Underdominance, Hybrid index, Trait, Preference (Maximum number)
 paste("Chromosone number (with sex chrom):", chrom_n)
 
 g_total <- 1 + (chrom_n - 1)*g_chrom
@@ -337,7 +270,6 @@ Create `phenotypes_{genome setting}.txt`. I made 3 phenotype files with genome s
 ```{r}
 
 Hybridindex <- paste0(
-  gf[2+g_chrom*2, "name"], "+", gf[3+g_chrom*2, "name"], "+", 
   gf[2+g_chrom*3, "name"], "+", gf[3+g_chrom*3, "name"], "+", 
   gf[2+g_chrom*4, "name"], "+", gf[3+g_chrom*4, "name"], "+", 
   gf[2+g_chrom*5, "name"], "+", gf[3+g_chrom*6, "name"], "+", 
@@ -346,17 +278,18 @@ Hybridindex <- paste0(
   gf[2+g_chrom*8, "name"], "+", gf[3+g_chrom*8, "name"], "+", 
   gf[2+g_chrom*9, "name"], "+", gf[3+g_chrom*9, "name"], "+",
   gf[2+g_chrom*10, "name"], "+", gf[3+g_chrom*10, "name"], "+",
-  gf[2+g_chrom*11, "name"], "+", gf[3+g_chrom*11, "name"]
+  gf[2+g_chrom*11, "name"], "+", gf[3+g_chrom*11, "name"], "+",
+  gf[2+g_chrom*12, "name"], "+", gf[3+g_chrom*12, "name"]
   )
 
 Pheno <- data.frame(
-  Phenotypes = c("Sex", "Fitness0", "Pref0", "Pref1", "Signal0", "Hybridindex"), 
+  Phenotypes = c("Sex", "BDMI", "Underdominance", "Pref0", "Signal0", "Hybridindex"), 
   Formula    = c(
     gf[1, "name"],   # Sex
-    paste0(gf[2, "name"], "+", gf[2+g_chrom, "name"]), # Fitness0 = B
-    gf[2+g_chrom*12, "name"], # Preference (peak)
-    gf[2+g_chrom*13, "name"], # Preference (choosiness)
-    "Signal",                # Signal
+    paste0(gf[2, "name"], "+", gf[2+g_chrom, "name"]), # BDMI
+    gf[2+g_chrom*2, "name"],  # Underdominance
+    gf[2+g_chrom*13, "name"], # Preference (peak)
+    "Signal",                # Signal, determined later according to link/unlinked with preference
     Hybridindex              # Hybrid Index
     )
   )
@@ -366,7 +299,7 @@ Pheno[5,2] <- gf[2+g_chrom*14, "name"]
 write_tsv(Pheno, "./Config/phenotypes_dis_unlink.txt")
 
 # dis_link
-Pheno[5,2] <- gf[2+g_chrom*2, "name"]
+Pheno[5,2] <- gf[2+g_chrom*13, "name"]
 write_tsv(Pheno, "./Config/phenotypes_dis_link.txt")
 
 
@@ -375,12 +308,13 @@ for(genomeset in c("dis_unlink", "dis_link")){
     make_bash(gset = genomeset, sexsel = ss) %>% 
       write(paste0("./Bash/", genomeset, "_", ss, ".sbatch.sh"))
     
-    for(ns in c(0.1, 0.3, 0.7, 1)){
-      make_config(gset = genomeset, sexsel = ss, natsel = ns) %>% 
-        write(paste0("./Config/", genomeset, "_", ss, "_natsel", ns, ".cfg"))
+    for(BDMI in c(0.1, 0.4, 0.8)){
+      for(H in c(0.1, 0.4, 0.8)){
+        make_config(gset = genomeset, sexsel = ss, bdmi = BDMI, h = H) %>% 
+          write(paste0("./Config/", genomeset, "_", ss, "_b", BDMI, "h", H, ".cfg"))
       
       # dir.create(paste0("/Users/katsu/Dropbox/5_Simulation/Result/", genomeset, "_", ss, "_natsel", ns)) # #出力先フォルダ作成
-    }}}
+    }}}}
 
 # By running this file on Admix'em, marker file (`markers.txt`) and recombination file (`recomb.txt`) will be made
 
@@ -656,361 +590,6 @@ while [ $COUNTERA -lt $REPS ]; do
 
 done
 wait
-
-```
-
-
-
-<div style="margin-bottom:70px;">
-</div>
-
-## Result
-
-- 2 loci models : Preference and traits are determined by each 1 gene on different chromosome
-
-- 1 locus models : Preference and traits are determined by 1 gene
-
-### Disruptive sexual selection
-
-```{r}
-
-# Visualize inheritance pattern
-inherit_table$PP <- c(0.745,0.01,0.245)
-inherit_table$Pp <- c(0.495,0.01,0.495)
-inherit_table$pp <- c(0.245,0.01,0.745)
-inherit_table %>% 
-  kable("html", caption = "**Trait \\ Preference**") %>% 
-  kable_styling("striped", position = "left", full_width = F)
-
-cap = "Disatractive hybrids"
-
-dat <- foreach(locus = 1:2, .combine = 'rbind') %do% {
-  foreach(ns = c(0.3, 1), .combine = 'rbind') %do% {
-    load_simul(l = locus, sexsel = "disruptive", natsel = ns)
-    } } %>% 
-  summarise_simul()
-levels(dat$Locus) <- c("Linked", "Unlinked")
-
-dat %>% ggplot(aes(x = Generation, y = Freq, colour = Signal0, group = Signal0)) +
-  geom_line() +
-  labs(y = "Frequency (%)", colour = "Courter phenotype", title = cap) +
-  facet_grid(Naturalselection ~ Locus, scales = "free")
-
-```
-
-<div style="margin-bottom:40px;">
-</div>
-
-
-### Self-reference assortative matings 
-
-```{r}
-# Visualize inheritance pattern
-inherit_table$PP <- c(0.99,0.005,0.005)
-inherit_table$Pp <- c(0.005,0.99,0.005)
-inherit_table$pp <- c(0.005,0.005,0.99)
-# Output inheritance style table
-inherit_table %>% 
-  kable("html", caption = "**Trait \\ Preference**") %>% 
-  # here you can add the vertical line
-  column_spec (2:4, border_left = T, border_right = T) %>%
-  kable_styling(position = "left", full_width = F)
-
-cap = "Self-reference assortative mating"
-
-dat <- foreach(locus = 1:2, .combine = 'rbind') %do% {
-  foreach(ns = c(0.3, 1), .combine = 'rbind') %do% {
-    load_simul(l = locus, sexsel = "selfref", natsel = ns) 
-    } } %>% 
-  summarise_simul()
-levels(dat$Locus) <- c("Linked", "Unlinked")
-
-dat %>% ggplot(aes(x = Generation, y = Freq, colour = Signal0, group = Signal0)) +
-  geom_line() +
-  labs(y = "Frequency (%)", colour = "Courter phenotype", title = cap) +
-  facet_grid(Naturalselection ~ Locus, scales = "free")
-
-```
-
-<div style="margin-bottom:40px;">
-</div>
-
-### Recessive preference
-
-```{r}
-
-# Visualize inheritance pattern
-inherit_table$PP <- c(0.99,0.005,0.005)
-inherit_table$Pp <- c(0.005,0.005,0.99)
-inherit_table$pp <- c(0.005,0.005,0.99)
-inherit_table %>% 
-  kable("html", caption = "**Trait \\ Preference**") %>% 
-  # here you can add the vertical line
-  column_spec (2:4, border_left = T, border_right = T) %>%
-  kable_styling(position = "left", full_width = F)
-cap = "Recessive preference"
-
-dat <- foreach(locus = 1:2, .combine = 'rbind') %do% {
-  foreach(ns = c(0.3, 1), .combine = 'rbind') %do% {
-    load_simul(l = locus, sexsel = "recessive", natsel = ns)
-    } } %>% 
-  summarise_simul()
-levels(dat$Locus) <- c("Linked", "Unlinked")
-
-dat %>% ggplot(aes(x = Generation, y = Freq, colour = Signal0, group = Signal0)) +
-  geom_line() +
-  labs(y = "Frequency (%)", colour = "Courter phenotype", title = cap) +
-  facet_grid(Naturalselection ~ Locus, scales = "free")
-
-```
-
-<div style="margin-bottom:40px;">
-</div>
-
-### Pseudo-dominance
-
-```{r}
-
-# Visualize inheritance pattern
-inherit_table$PP <- c(0.99,0.005,0.005)
-inherit_table$Pp <- c(0.99,0.005,0.005)
-inherit_table$pp <- c(1/3,1/3,1/3)
-inherit_table %>% 
-  kable("html", caption = "**Trait \\ Preference**") %>% 
-  kable_styling("striped", position = "left", full_width = F)
-
-cap = "Pseudo-dominance"
-
-dat <- foreach(locus = 1:2, .combine = 'rbind') %do% {
-  foreach(ns = c(0.3, 1), .combine = 'rbind') %do% {
-    load_simul(l = locus, sexsel = "pdominance", natsel = ns)
-    } } %>% 
-  summarise_simul()
-levels(dat$Locus) <- c("Linked", "Unlinked")
-
-dat %>% ggplot(aes(x = Generation, y = Freq, colour = Signal0, group = Signal0)) +
-  geom_line() +
-  labs(y = "Frequency (%)", colour = "Courter phenotype", title = cap) +
-  facet_grid(Naturalselection ~ Locus, scales = "free")
-
-```
-
-Heterozygotes and recessive are favored (why??)
-
-<div style="margin-bottom:40px;">
-</div>
-
-### Heterozygotes mate randomly
-
-```{r}
-
-# Visualize inheritance pattern
-inherit_table$PP <- c(0.99,0.005,0.005)
-inherit_table$Pp <- c(1/3,1/3,1/3)
-inherit_table$pp <- c(0.005,0.005,0.99)
-inherit_table %>% 
-  kable("html", caption = "**Trait \\ Preference**") %>% 
-  kable_styling("striped", position = "left", full_width = F)
-
-cap = "Heterozygotes mate randomly"
-
-dat <- foreach(locus = 1:2, .combine = 'rbind') %do% {
-  foreach(ns = c(0.3, 1), .combine = 'rbind') %do% {
-    load_simul(l = locus, sexsel = "heterorandom", natsel = ns)
-    } } %>% 
-  summarise_simul()
-levels(dat$Locus) <- c("Linked", "Unlinked")
-
-dat %>% ggplot(aes(x = Generation, y = Freq, colour = Signal0, group = Signal0)) +
-  geom_line() +
-  labs(y = "Frequency (%)", colour = "Courter phenotype", title = cap) +
-  facet_grid(Naturalselection ~ Locus, scales = "free")
-
-```
-
-Recessive is favored, and heterozygote is not favored
-
-<div style="margin-bottom:40px;">
-</div>
-
-### Flip preference
-
-```{r}
-
-# Visualize inheritance pattern
-inherit_table$PP <- c(0.99,0.005,0.005)
-inherit_table$Pp <- c(0.49,0.01,0.49)
-inherit_table$pp <- c(0.005,0.005,0.99)
-inherit_table %>% 
-  kable("html", caption = "**Trait \\ Preference**") %>% 
-  kable_styling("striped", position = "left", full_width = F)
-
-cap = "Flip preference"
-
-dat <- foreach(locus = 1:2, .combine = 'rbind') %do% {
-  foreach(ns = c(0.3, 1), .combine = 'rbind') %do% {
-    load_simul(l = locus, sexsel = "flip", natsel = ns)
-    } } %>% 
-  summarise_simul()
-levels(dat$Locus) <- c("Linked", "Unlinked")
-
-dat %>% ggplot(aes(x = Generation, y = Freq, colour = Signal0, group = Signal0)) +
-  geom_line() +
-  labs(y = "Frequency (%)", colour = "Courter phenotype", title = cap) +
-  facet_grid(Naturalselection ~ Locus, scales = "free")
-
-```
-
-<div style="margin-bottom:40px;">
-</div>
-
-### Atractive hybrids
-
-```{r}
-
-# Visualize inheritance pattern
-inherit_table$PP <- c(0.245,0.745,0.01)
-inherit_table$Pp <- c(0.005,0.99,0.005)
-inherit_table$pp <- c(0.01,0.745,0.245)
-inherit_table %>% 
-  kable("html", caption = "**Trait \\ Preference**") %>% 
-  kable_styling("striped", position = "left", full_width = F)
-
-cap = "Atractive hybrids"
-
-dat <- foreach(locus = 1:2, .combine = 'rbind') %do% {
-  foreach(ns = c(0.3, 1), .combine = 'rbind') %do% {
-    load_simul(l = locus, sexsel = "speriorhyb", natsel = ns)
-    } } %>% 
-  summarise_simul()
-levels(dat$Locus) <- c("Linked", "Unlinked")
-
-dat %>% ggplot(aes(x = Generation, y = Freq, colour = Signal0, group = Signal0)) +
-  geom_line() +
-  labs(y = "Frequency (%)", colour = "Courter phenotype", title = cap) +
-  facet_grid(Naturalselection ~ Locus, scales = "free")
-
-```
-
-<div style="margin-bottom:40px;">
-</div>
-
-### Oblique positively learned preference
-
-```{r}
-
-cap = "Oblique positive"
-
-dat <- foreach(ns = c(0.3, 1), .combine = 'rbind') %do% {
-  load_simul(l = 8, sexsel = "obl_posit", natsel = ns)
-  } %>% 
-  summarise_simul()
-
-dat %>% ggplot(aes(x = Generation, y = Signal0, size = Freq)) +
-  geom_point() +
-  labs(y = "Frequency (%)", title = cap) +
-  facet_grid(Naturalselection ~ Locus, scales = "free")
-
-```
-
-<div style="margin-bottom:40px;">
-</div>
-
-### Oblique negatively learned preference
-
-```{r}
-
-cap = "Oblique negative"
-
-dat <- foreach(ns = c(0.3, 1), .combine = 'rbind') %do% {
-  load_simul(l = 8, sexsel = "obl_negat", natsel = ns)
-    } %>% 
-  summarise_simul()
-
-dat %>% ggplot(aes(x = Generation, y = Signal0, size = Freq)) +
-  geom_point() +
-  labs(y = "Frequency (%)", title = cap) +
-  facet_grid(Naturalselection ~ Locus, scales = "free")
-
-```
-
-<div style="margin-bottom:90px;">
-</div>
-
-# Complex models
-
-## Choosiness
-
-Here I set preference function as follows:
-
-$1/e^{(x-y)^2/z^2}$
-
-Where 
-
-- $x$, *the most favored courter phenotype*
-- $y$, *Courter phenotype*
-- $z$, *Promiscuity*, inverse of Choosiness
-
-Draw preference function in several promiscuity
-
-```{r}
-
-for(P in c(3, 4, 5, 6, 9, 15)){
-  curve(  
-    # Function
-    1/exp( ( x^2 )/( P^2 ) ) , 
-    # Plot range
-    from = -16, to = 16, ylim = c(0,1), 
-    main = paste("Promiscuity =", P)
-    )
-  }
-
-for(P in c(3, 4, 5, 6, 9, 11)){
-  curve(  
-    # Function
-    1-exp( -( x^2 )/( P^2 ) ) , 
-    # Plot range
-    from = -16, to = 16, ylim = c(0,1), 
-    main = paste("Promiscuity =", P)
-    )
-  }
-
-for(P in c(1:7,9:16)){
-  curve(  
-    # Function
-    1/exp( ( x^2 )/(  (8/(P-8)) ^2 ) ) , 
-    # Plot range
-    from = -16, to = 16, ylim = c(0,1), 
-    main = paste("Pref0 =", P)
-    )
-  }
-
-```
-
-
-```{r}
-
-# dat <- load_simul(l = 1, sexsel = "Disruptive", natsel = 0.3)
-# 
-# ggplot(
-#   summarise_simul(dat), 
-#   aes(x = Generation, y = Freq, colour = Signal0, group = Signal0)
-#   ) +
-#   geom_line() +
-#   labs(
-#     y = "Frequency (%)", colour = "Courter phenotype"
-#     )
-
-  # assign(
-  #   paste0("plot_d_", locus),
-  #   # Density graph
-  #   ggplot(dat, aes(x = Signal0, colour = Generation)) +
-  #     geom_density() +
-  #     labs(
-  #       x = "Courter phenotype", 
-  #       title = paste(locus, "locus |", cap)
-  #       )
-  #   )
 
 ```
 
