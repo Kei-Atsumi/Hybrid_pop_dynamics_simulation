@@ -130,7 +130,8 @@ make_config <- function(
     "avg_female_gamete\t=\t10",
     "std_female_gamete\t=\t3.16",
     "kids_per_female_func\t=\tPoisson",
-    "samplegens\t=\t/lustre/k.atsumi/Config/samplegens.txt", 
+    "samplefreq\t=\t1", 
+    # "samplegens\t=\t/lustre/k.atsumi/Config/samplegens.txt", 
     "MarkerOutput\t=\tOff", #On or Off
     paste0("SampleMate\t=\t", maten),
     "NumThreads\t=\t1",
