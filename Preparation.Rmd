@@ -14,28 +14,62 @@ output:
 
 Load packages & original functions
 
-- `summarise_simul` : Load & output simulation result
-- `make_config` : Make simulation config file
+Here I set original function `make_genome` that creates genes file
+
 
 ```{r}
 
 rm(list=ls())  # reset workspace
 
 pacman::p_load(
- openxlsx    # open excel file
- , RcppRoll  # window functions
- , tidyverse
- , reshape2
- , foreach   # Pararel
- , magrittr  # Extend pipe
+ tidyverse
  , knitr     # rmarkdown
- , kableExtra # nice tables
- , pander     # nice tables
- , patchwork
  )
 
 opts_chunk$set(prompt=TRUE, message=FALSE, comment="", warning = FALSE) 
 options(knitr.kable.NA = '', scipen=100)  # do not show numbers using exponential
+
+
+#' Title: make_genome
+#' Make genes file
+#' @param chrom_n: Number of total chromosomes
+#' @param g_chrom: Genes/chromosome
+#' @param g_total: Total number of genes
+#' @param chrom_size: Chromosome size in basepair
+make_genome <- function(cn = chrom_n, gt = g_total) {
+
+  set.seed(10) # To make randomization repeatable
+  
+  gf <- data.frame(
+    Chromosome = c(
+      1,                      # Sex chromosome
+      rep(2:cn, g_chrom) # Autosomal chromosome
+      ) %>% 
+      sort(),
+    # Create random chromosome position to each autosomal gene loci
+    position = runif(n = gt, min = 1, max = chrom_size) %>% 
+        floor(), # Integers
+    # First gene: Sex determination. S vs s. Hemizygous. Freq = 0.5
+    Allele1     = c("S", rep("I", 2*g_chrom), rep("H", g_chrom), rep("A", gt - (3*g_chrom+1))),
+    Allele1val  = c(1, rep(0.5, g_total - 1)),
+    Allele2     = c("s", rep("i", 2*g_chrom), rep("h", g_chrom), rep("a", gt - (3*g_chrom+1))),
+    Allele2val  = c(0, rep(0, gt - 1)),
+    Mode        = c("Hemizygous", rep("Additive", gt - 1)),
+    Freqal1pop1 = c(0.5, rep(1.0, gt - 1)),
+    Freqal1pop2 = c(0.5, rep(0, gt - 1))
+    ) %>% 
+    mutate(name = str_c("chr", Chromosome, "_", position, sep = "")) %>% 
+    dplyr::select(name, Chromosome:Freqal1pop2)
+  
+  # Epistasis
+  gf[2, "Allele1val"] <- 5
+  gf[2, "Allele2val"] <- 0
+  gf[2+g_chrom, "Allele1val"] <- 0
+  gf[2+g_chrom, "Allele2val"] <- 10
+  
+  return(gf)
+  
+  }
 
 
 #' Title: make_config
@@ -104,8 +138,7 @@ make_config <- function(
     sep = "\n"
     ) %>% 
     return()
-  
-}
+  }
 
 
 #' Title: make_bash
@@ -115,63 +148,103 @@ make_config <- function(
 #' @param gen: Generations
 #' @param mig: Migration in each >1 generation
 #' @param maten: Sampled mate
-make_bash <- function(gset = "", sexsel = "") {
-  
+make_bash <- function(gset = "", sexsel = "", s = "") {
+
+  f = paste0("./Bash/", gset, "_", sexsel, ".sbatch.sh") #Output file name
+    
   paste(
     "#!/bin/bash",
     paste("#PBS -N hyb", sexsel, gset, sep = "_"),
     "#PBS -q blade",
-    "#PBS -l nodes=1:ppn=9,mem=90gb,walltime=48:00:00",
+    "#PBS -l nodes=1:ppn=16,mem=100gb,walltime=48:00:00",
     "module load gcc",
+    "# Repetition 1 to 100",
     "REPS=101",
-    "COUNTERA=0",
-    "COUNTERB=0",
+    "# X: first random seed value, its decimal because random seeds are between 0 and 1. If there is an existing one, let X be the newest one.",
+    "# Y: new randmon seed value; let it have the same value as X here",    
     "X=.1356",
     "Y=.1356",
+    "# COUNTERA, first iteration name; COUNTERB, new iteration name",
+    "COUNTERA=0",
+    "COUNTERB=0",
     "while [ $COUNTERA -lt $REPS ]; do",
     " echo \"$COUNTERA\"",
     " Y=`echo \"$Y + 0.0001\" | bc`",
-    # " echo $Y",
-    paste0(" sed -i -e \"s/$X/$Y/g\" /lustre/k.atsumi/Config/", gset, "_", sexsel, "_natsel0.1.cfg"),
-    paste0(" sed -i -e \"s/$X/$Y/g\" /lustre/k.atsumi/Config/", gset, "_", sexsel, "_natsel0.3.cfg"),
-    paste0(" sed -i -e \"s/$X/$Y/g\" /lustre/k.atsumi/Config/", gset, "_", sexsel, "_natsel0.7.cfg"),
-    paste0(" sed -i -e \"s/$X/$Y/g\" /lustre/k.atsumi/Config/", gset, "_", sexsel, "_natsel1.cfg"),
     " let COUNTERB=COUNTERB+1",
-    paste0(" sed -i -e \"s/rep${COUNTERA}dir/rep${COUNTERB}dir/g\" /lustre/k.atsumi/Config/", gset, "_", sexsel, "_natsel0.1.cfg"),
-    paste0(" sed -i -e \"s/rep${COUNTERA}dir/rep${COUNTERB}dir/g\" /lustre/k.atsumi/Config/", gset, "_", sexsel, "_natsel0.3.cfg"),
-    paste0(" sed -i -e \"s/rep${COUNTERA}dir/rep${COUNTERB}dir/g\" /lustre/k.atsumi/Config/", gset, "_", sexsel, "_natsel0.7.cfg"),
-    paste0(" sed -i -e \"s/rep${COUNTERA}dir/rep${COUNTERB}dir/g\" /lustre/k.atsumi/Config/", gset, "_", sexsel, "_natsel1.cfg"),
-    # " echo $X",
-    paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_b0.1h0.1.cfg &"),
-    paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_b0.1h0.4.cfg &"),
-    paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_b0.1h0.8.cfg &"),
-    paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_b0.4h0.1.cfg &"),
-    paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_b0.4h0.4.cfg &"),
-    paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_b0.4h0.8.cfg &"),
-    paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_b0.8h0.1.cfg &"),
-    paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_b0.8h0.4.cfg &"),
-    paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_b0.8h0.8.cfg &"),
-    "wait",
+    " # Change random seed ($X->$Y) and output folder (${COUNTERA}->${COUNTERB})",
+    " # Run simulation",
+    sep = "\n"
+    ) %>% 
+    cat(., "\n", append = FALSE, file = f) #Renew file
+  
+  for(sb in s){
+    for(sh in s){
+      
+      paste(
+        # Change random seed ($X->$Y) and output folder (${COUNTERA}->${COUNTERB})
+        paste0(" sed -i -e \"s/$X/$Y/g\" -e \"s/rep${COUNTERA}dir/rep${COUNTERB}dir/g\" /lustre/k.atsumi/Config/", gset, "_", sexsel, "_b", sb, "h", sh, ".cfg"),
+        # Run simulation
+        paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_b", sb, "h", sh, ".cfg &"),
+        sep = "\n"
+        ) %>%
+        cat(., "\n", append = TRUE, file = f)
+    }}
+
+  paste(
+    " wait",
+    " Make new random seed and iteration value",
     " X=`echo \"$X + 0.0001\" | bc`",
     " let COUNTERA=COUNTERA+1",
     "done",
-    # "wait",
     sep = "\n"
-    ) %>% 
-    return()
+    ) %>%
+    cat(., "\n", append = TRUE, file = f)
   
   }
   
+```
+
+
+# Selection
+
+## Natural selection
+
+```{r}
+
+# Variation in selection strength
+nats <- c(0, 0.1, 0.4, 0.8)
+
+for(bdmi in nats){
+  for(ud in nats){
+    
+    paste(
+      "Population\tGen\tSelection",
+      "species1\t-1\t1",
+      "species2\t-1\t1",
+      paste0(
+        "hyb\t-1\tb=", 
+        bdmi, 
+        ", u=", 
+        ud, 
+        ", if(BDMI==30 && Underdominance==0.5, 1-b-u+b*u, if(BDMI==30 && Underdominance!=0.5, 1-b, if(BDMI!=30 && Underdominance=0.5, 1-u, 1)))"  
+        ),
+      sep = "\n"
+      ) %>% 
+      write(paste0("./Config/naturalsel_b", bdmi, "h", ud, ".txt"))
+
+}}
 
 ```
 
 
-# Model settings
+# Simple model settings
 
 - With sex chromosome 1
   - Allele (S) with trait value 1 will be male
 
-- 100% mortal epistasis between Chrom 2 & 3
+- BDMI between Chrom 2 & 3
+
+- Underdominance at chrom 4
 
 - Migration happens in only first generation
 
@@ -179,7 +252,8 @@ make_bash <- function(gset = "", sexsel = "") {
 
 - Mate sampling: 50 indv
 
-Here I set original function `make_genome` that creates genes file
+
+## Gene file
 
 ```{r}
 
@@ -187,56 +261,7 @@ chrom_size <- 1*10^5
 paste("Chromosone size (bp):", chrom_size)
 
 g_chrom <- 2
-paste("Genes per chromosome:", g_chrom)
-
-
-#' Title: make_genome
-#' Make genes file
-#' @param chrom_n: Number of total chromosomes
-#' @param g_chrom: Genes/chromosome
-#' @param g_total: Total number of genes
-#' @param chrom_size: Chromosome size in basepair
-make_genome <- function(cn = chrom_n, gt = g_total) {
-
-  set.seed(10) # To make randomization repeatable
-  
-  gf <- data.frame(
-    Chromosome = c(
-      1,                      # Sex chromosome
-      rep(2:cn, g_chrom) # Autosomal chromosome
-      ) %>% 
-      sort(),
-    # Create random chromosome position to each autosomal gene loci
-    position = runif(n = gt, min = 1, max = chrom_size) %>% 
-        floor(), # Integers
-    # First gene: Sex determination. S vs s. Hemizygous. Freq = 0.5
-    Allele1     = c("S", rep("I", 2*g_chrom), rep("H", g_chrom), rep("A", gt - (3*g_chrom+1))),
-    Allele1val  = c(1, rep(0.5, g_total - 1)),
-    Allele2     = c("s", rep("i", 2*g_chrom), rep("h", g_chrom), rep("a", gt - (3*g_chrom+1))),
-    Allele2val  = c(0, rep(0, gt - 1)),
-    Mode        = c("Hemizygous", rep("Additive", gt - 1)),
-    Freqal1pop1 = c(0.5, rep(1.0, gt - 1)),
-    Freqal1pop2 = c(0.5, rep(0, gt - 1))
-    ) %>% 
-    mutate(name = str_c("chr", Chromosome, "_", position, sep = "")) %>% 
-    dplyr::select(name, Chromosome:Freqal1pop2)
-  
-  # Epistasis
-  gf[2, "Allele1val"] <- 5
-  gf[2, "Allele2val"] <- 0
-  gf[2+g_chrom, "Allele1val"] <- 0
-  gf[2+g_chrom, "Allele2val"] <- 10
-  
-  return(gf)
-
-}
-
-```
-
-
-## Simple models
-
-```{r}
+paste("Genes per autosome:", g_chrom)
 
 g_trait_n <- 1    # N of trait loci
 paste(g_trait_n, "locus determine courter trait")
@@ -261,7 +286,7 @@ file.copy(
 ```
 
 
-### Create phenotype files
+## Phenotype files
 
 Create `phenotypes_{genome setting}.txt`. I made 3 phenotype files with genome setting
 - *dis_unlink* : Trait determined by 1 locus, which is unlinked with preference genes
@@ -283,40 +308,44 @@ Hybridindex <- paste0(
   )
 
 Pheno <- data.frame(
-  Phenotypes = c("Sex", "BDMI", "Underdominance", "Pref0", "Signal0", "Hybridindex"), 
+  Phenotypes = c("Sex", "BDMI", "Underdominance", "Pref0", "Pref1", "Signal0", "Hybridindex"), 
   Formula    = c(
     gf[1, "name"],   # Sex
     paste0(gf[2, "name"], "+", gf[2+g_chrom, "name"]), # BDMI
     gf[2+g_chrom*2, "name"],  # Underdominance
     gf[2+g_chrom*13, "name"], # Preference (peak)
+    gf[2+g_chrom*13, "name"], # Preference
     "Signal",                # Signal, determined later according to link/unlinked with preference
     Hybridindex              # Hybrid Index
     )
   )
 
 # dis_unlink
-Pheno[5,2] <- gf[2+g_chrom*14, "name"]
+Pheno[6,2] <- gf[2+g_chrom*14, "name"]
 write_tsv(Pheno, "./Config/phenotypes_dis_unlink.txt")
 
 # dis_link
-Pheno[5,2] <- gf[2+g_chrom*13, "name"]
+Pheno[6,2] <- gf[2+g_chrom*13, "name"]
 write_tsv(Pheno, "./Config/phenotypes_dis_link.txt")
 
 
 for(genomeset in c("dis_unlink", "dis_link")){
   for(ss in c("speriorhyb", "disruptive", "flip", "heterorandom", "pdominance", "recessive", "selfref")){
-    make_bash(gset = genomeset, sexsel = ss) %>% 
-      write(paste0("./Bash/", genomeset, "_", ss, ".sbatch.sh"))
+    make_bash(gset = genomeset, sexsel = ss, s = nats)
     
-    for(BDMI in c(0.1, 0.4, 0.8)){
-      for(H in c(0.1, 0.4, 0.8)){
+    for(BDMI in nats){
+      for(H in nats){
         make_config(gset = genomeset, sexsel = ss, bdmi = BDMI, h = H) %>% 
           write(paste0("./Config/", genomeset, "_", ss, "_b", BDMI, "h", H, ".cfg"))
       
       # dir.create(paste0("/Users/katsu/Dropbox/5_Simulation/Result/", genomeset, "_", ss, "_natsel", ns)) # #出力先フォルダ作成
-    }}}}
+  }}}}
 
-# By running this file on Admix'em, marker file (`markers.txt`) and recombination file (`recomb.txt`) will be made
+```
+
+By running file `config_marker_~~.txt` on Admix'em, marker file (`markers.txt`) and recombination file (`recomb.txt`) will be made
+
+```{r}
 
 m_chrom <- 2 #Marker per chromosome
 
@@ -359,40 +388,61 @@ file.copy("./Config/markers_dis_link.txt","./Config/markers_dis_unlink.txt", ove
 ```
 
 
-## Quantitative trait & Learned preference models
+
+
+
+
+# Quantitative trait & Learned preference models
 
 Preference is determined not by gene, but by phenotypic distribution of the hybrid population
 
 ```{r}
 
-g_trait_n <- 16    # N of trait loci
-paste(g_trait_n, "locus determine courter trait")
+chrom_size <- 1*10^7
+paste("Chromosone size (bp):", chrom_size)
 
-g_pref_n  <- 0     # N of preference loci
-paste(g_pref_n, "locus determine mate preference peak, with constant choosiness")
-# trait_n   <- 1      # N of courter trait
-
-chrom_n <- 1 + 2 + 10 + g_trait_n + g_pref_n #Sex, BDMI, Hybrid index, Trait, Preference (Maximum number)
+chrom_n <- 1 + 25
 paste("Chromosone number (with sex chrom):", chrom_n)
+
+g_chrom <- 10
+paste("Genes per autosome:", g_chrom)
 
 g_total <- 1 + (chrom_n - 1)*g_chrom
 paste("Total number of genes:", g_total)
 
 # Create gene file
 gf <- make_genome()
-write_tsv(gf, "./Config/genes_learn.txt")
+gf$Allele1val <- c(1.0, rep(0.5, g_total-1))
+gf$Allele2val <- 0
+gf$Allele1    <- c("S", rep("A", g_total-1))
+gf$Allele2    <- c("s", rep("a", g_total-1))
 
-# Phenotype file
-Pheno[5,2] <- paste0(
-  gf[2+g_chrom*12, "name"], "+", gf[2+g_chrom*13, "name"], "+",   
-  gf[2+g_chrom*14, "name"], "+", gf[2+g_chrom*15, "name"], "+", 
-  gf[2+g_chrom*16, "name"], "+", gf[2+g_chrom*17, "name"], "+", 
-  gf[2+g_chrom*18, "name"], "+", gf[2+g_chrom*19, "name"], "+", 
-  gf[2+g_chrom*20, "name"], "+", gf[2+g_chrom*21, "name"], "+", 
-  gf[2+g_chrom*22, "name"], "+", gf[2+g_chrom*23, "name"], "+", 
-  gf[2+g_chrom*24, "name"], "+", gf[2+g_chrom*25, "name"], "+", 
-  gf[2+g_chrom*26, "name"], "+", gf[2+g_chrom*27, "name"]
-  )
+write_tsv(gf, "./Config/genes_quant.txt")
+
+Pheno[7,2] <- paste0(gf$name, collapse = "+") #Hybrd index: all genes
+
+# Make phenotype files with randomized positions of functional genes
+for(r in 1:100) {
+  
+  set.seed(r) # To make randomization repeatable
+  Pheno[4,2] <- paste0(sample(gf$name, 70), collapse = "+")
+  set.seed(r+100) # Random genes, while differentiating with above
+  Pheno[5,2] <- paste0(sample(gf$name, 70), collapse = "+")
+  set.seed(r+200) # Random genes, while differentiating with above
+  Pheno[6,2] <- paste0(sample(gf$name, 70), collapse = "+")
+  
+  write_tsv(Pheno, paste0("./Config/phenotypes_quant_random", r, ".txt"))
+  
+}
+
+```
+
+
+```{r}
+
+
+
+
 write_tsv(Pheno, "./Config/phenotypes_learn.txt")  
 
 # Config file
@@ -400,13 +450,11 @@ for(ss in c("obl_posit", "obl_negat")){
   make_bash(gset = "learn", sexsel = ss) %>% 
       write(paste0("./Bash/", "learn_", ss, ".sbatch.sh"))
 
-  for(ns in c(0.1, 0.3, 0.7, 1)){
-    make_config(gset = "learn", sexsel = ss, natsel = ns) %>% 
-      write(paste0("./Config/learn_", ss, "_natsel", ns, ".cfg"))
-    # #出力先フォルダ作成
-    # dir.create(paste0("/Users/katsu/Dropbox/5_Simulation/Result/learn_", ss, "_natsel", ns))
-  }}
-
+  for(BDMI in s){
+    for(H in s){
+      make_config(gset = "learn", sexsel = ss, bdmi = BDMI, h = H) %>% 
+        write(paste0("./Config/learn_", ss, "_b", BDMI, "h", H, ".cfg"))
+}}}
 
 # By running this file on Admix'em, marker file (`markers.txt`) and recombination file (`recomb.txt`) will be made
 m_chrom <- 2 #Marker per chromosome
@@ -446,19 +494,22 @@ paste(
 
 ```
 
-## Quantitative trait and preference
+# Quantitative trait and preference
 
 ```{r}
 
-g_trait_n <- 16    # N of trait loci
-paste(g_trait_n, "loci determine courter trait")
+# g_trait_n <- 16    # N of trait loci
+# paste(g_trait_n, "loci determine courter trait")
 
-g_pref_n  <- 16     # N of preference loci
-paste(g_pref_n, "loci determine mate preference peak, with constant choosiness")
-# trait_n   <- 1      # N of courter trait
+# g_pref_n  <- 16     # N of preference loci
+# paste(g_pref_n, "loci determine mate preference peak, with constant choosiness")
+# # trait_n   <- 1      # N of courter trait
 
-chrom_n <- 1 + 2 + 10 + g_trait_n + g_pref_n #Sex, BDMI, Hybrid index, Trait, Preference (Maximum number)
+chrom_n <- 1 + 20
 paste("Chromosone number (with sex chrom):", chrom_n)
+
+g_chrom <- 10
+paste("Genes per autosome:", g_chrom)
 
 g_total <- 1 + (chrom_n - 1)*g_chrom
 paste("Total number of genes:", g_total)
@@ -467,30 +518,18 @@ paste("Total number of genes:", g_total)
 gf <- make_genome()
 write_tsv(gf, "./Config/genes_quant.txt")
 
-# Phenotype file
-Pheno[3,2] <- paste0(
-  gf[2+g_chrom*28, "name"], "+", gf[2+g_chrom*29, "name"], "+", 
-  gf[2+g_chrom*30, "name"], "+", gf[2+g_chrom*31, "name"], "+", 
-  gf[2+g_chrom*32, "name"], "+", gf[2+g_chrom*33, "name"], "+", 
-  gf[2+g_chrom*34, "name"], "+", gf[2+g_chrom*35, "name"], "+", 
-  gf[2+g_chrom*36, "name"], "+", gf[2+g_chrom*37, "name"], "+", 
-  gf[2+g_chrom*38, "name"], "+", gf[2+g_chrom*39, "name"], "+", 
-  gf[2+g_chrom*40, "name"], "+", gf[2+g_chrom*41, "name"], "+", 
-  gf[2+g_chrom*42, "name"], "+", gf[2+g_chrom*43, "name"]
-  )
 write_tsv(Pheno, "./Config/phenotypes_quant.txt")  
 
 # Config file
 for(ss in c("constchoosy", "hybridrandom")){
   make_bash(gset = "quant", sexsel = ss) %>% 
       write(paste0("./Bash/", "quant_", ss, ".sbatch.sh"))
-  
-  for(ns in c(0.1, 0.3, 0.7, 1)){
-    make_config(gset = "quant", sexsel = ss, natsel = ns) %>%
-      write(paste0("./Config/quant_", ss, "_natsel", ns, ".cfg"))
-    # #出力先フォルダ作成
-    # dir.create(paste0("/Users/katsu/Dropbox/5_Simulation/Result/quant_", ss, "_natsel", ns))
-  }}
+
+  for(BDMI in s){
+    for(H in s){
+      make_config(gset = "quant", sexsel = ss, bdmi = BDMI, h = H) %>% 
+        write(paste0("./Config/quant", ss, "_b", BDMI, "h", H, ".cfg"))
+}}}
 
 # By running this file on Admix'em, marker file (`markers.txt`) and recombination file (`recomb.txt`) will be made
 
@@ -537,7 +576,7 @@ paste(
 </div>
 
 
-### Bash file
+# Bash file
 
 ```
 
@@ -546,7 +585,7 @@ paste(
 #PBS -q blade
 #PBS -l nodes=1:ppn=1,mem=50gb,walltime=96:00:00
 
-# we are going to do from repetition 1 to 10
+
 # X is going to be the first random seed value, its decimal because random seeds are between 0 and 1. If there is an existing one, let X be the newest one.
 # Y is goin to be the new randmon seed value; let it have the same value as X here
 
@@ -593,3 +632,74 @@ wait
 
 ```
 
+# Old codes
+
+```{r, include=FALSE}
+
+# 
+# 
+# # Phenotype file
+# Pheno[3,2] <- paste0(
+#   gf[2+g_chrom*28, "name"], "+", gf[2+g_chrom*29, "name"], "+", 
+#   gf[2+g_chrom*30, "name"], "+", gf[2+g_chrom*31, "name"], "+", 
+#   gf[2+g_chrom*32, "name"], "+", gf[2+g_chrom*33, "name"], "+", 
+#   gf[2+g_chrom*34, "name"], "+", gf[2+g_chrom*35, "name"], "+", 
+#   gf[2+g_chrom*36, "name"], "+", gf[2+g_chrom*37, "name"], "+", 
+#   gf[2+g_chrom*38, "name"], "+", gf[2+g_chrom*39, "name"], "+", 
+#   gf[2+g_chrom*40, "name"], "+", gf[2+g_chrom*41, "name"], "+", 
+#   gf[2+g_chrom*42, "name"], "+", gf[2+g_chrom*43, "name"]
+#   )
+# 
+# 
+#   paste(
+#     "#!/bin/bash",
+#     paste("#PBS -N hyb", sexsel, gset, sep = "_"),
+#     "#PBS -q blade",
+#     "#PBS -l nodes=1:ppn=16,mem=80gb,walltime=48:00:00",
+#     "module load gcc",
+#     "REPS=101",
+#     "COUNTERA=0",
+#     "COUNTERB=0",
+#     "X=.1356",
+#     "Y=.1356",
+#     "while [ $COUNTERA -lt $REPS ]; do",
+#     " echo \"$COUNTERA\"",
+#     " Y=`echo \"$Y + 0.0001\" | bc`",
+#     # " echo $Y",
+#     paste0(" sed -i -e \"s/$X/$Y/g\" /lustre/k.atsumi/Config/", gset, "_", sexsel, "_natsel0.1.cfg"),
+#     paste0(" sed -i -e \"s/$X/$Y/g\" /lustre/k.atsumi/Config/", gset, "_", sexsel, "_natsel0.3.cfg"),
+#     paste0(" sed -i -e \"s/$X/$Y/g\" /lustre/k.atsumi/Config/", gset, "_", sexsel, "_natsel0.7.cfg"),
+#     paste0(" sed -i -e \"s/$X/$Y/g\" /lustre/k.atsumi/Config/", gset, "_", sexsel, "_natsel1.cfg"),
+#     " let COUNTERB=COUNTERB+1",
+#     paste0(" sed -i -e \"s/rep${COUNTERA}dir/rep${COUNTERB}dir/g\" /lustre/k.atsumi/Config/", gset, "_", sexsel, "_natsel0.1.cfg"),
+#     paste0(" sed -i -e \"s/rep${COUNTERA}dir/rep${COUNTERB}dir/g\" /lustre/k.atsumi/Config/", gset, "_", sexsel, "_natsel0.3.cfg"),
+#     paste0(" sed -i -e \"s/rep${COUNTERA}dir/rep${COUNTERB}dir/g\" /lustre/k.atsumi/Config/", gset, "_", sexsel, "_natsel0.7.cfg"),
+#     paste0(" sed -i -e \"s/rep${COUNTERA}dir/rep${COUNTERB}dir/g\" /lustre/k.atsumi/Config/", gset, "_", sexsel, "_natsel1.cfg"),
+#     # " echo $X",
+#     paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_b0h0.cfg &"),
+#     paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_b0h0.1.cfg &"),
+#     paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_b0h0.4.cfg &"),
+#     paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_b0h0.8.cfg &"),
+#     paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_b0.1h0.cfg &"),
+#     paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_b0.1h0.1.cfg &"),
+#     paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_b0.1h0.4.cfg &"),
+#     paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_b0.1h0.8.cfg &"),
+#     paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_b0.4h0.cfg &"),
+#     paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_b0.4h0.1.cfg &"),
+#     paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_b0.4h0.4.cfg &"),
+#     paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_b0.4h0.8.cfg &"),
+#     paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_b0.8h0.cfg &"),
+#     paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_b0.8h0.1.cfg &"),
+#     paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_b0.8h0.4.cfg &"),
+#     paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_b0.8h0.8.cfg &"),
+#     "wait",
+#     " X=`echo \"$X + 0.0001\" | bc`",
+#     " let COUNTERA=COUNTERA+1",
+#     "done",
+#     # "wait",
+#     sep = "\n"
+#     ) %>% 
+#     return()
+
+
+```
