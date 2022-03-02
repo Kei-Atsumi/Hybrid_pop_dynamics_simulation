@@ -1,7 +1,7 @@
 #!/bin/bash
 #PBS -N hyb_selfref_dis_unlink
 #PBS -q blade
-#PBS -l nodes=1:ppn=16,mem=100gb,walltime=48:00:00
+#PBS -l nodes=1:ppn=16,mem=128gb,walltime=48:00:00
 module load gcc
 # Repetition 1 to 100
 REPS=101

@@ -157,7 +157,7 @@ make_bash <- function(gset = "", sexsel = "", s = "") {
     "#!/bin/bash",
     paste("#PBS -N hyb", sexsel, gset, sep = "_"),
     "#PBS -q blade",
-    "#PBS -l nodes=1:ppn=16,mem=100gb,walltime=48:00:00",
+    "#PBS -l nodes=1:ppn=16,mem=128gb,walltime=48:00:00",
     "module load gcc",
     "# Repetition 1 to 100",
     "REPS=101",
@@ -576,62 +576,18 @@ paste(
 <div style="margin-bottom:70px;">
 </div>
 
+# After simulation, before analysis
 
-# Bash file
-
-```
-
-#!/bin/bash
-#PBS -N hybrid_simulation
-#PBS -q blade
-#PBS -l nodes=1:ppn=1,mem=50gb,walltime=96:00:00
-
-
-# X is going to be the first random seed value, its decimal because random seeds are between 0 and 1. If there is an existing one, let X be the newest one.
-# Y is goin to be the new randmon seed value; let it have the same value as X here
-
-# GNUコンパイラ
-module load gcc
-
-REPS=101
-COUNTERA=0
-COUNTERB=0
-X=.1356
-Y=.1356
-
-# -lt : less than
-#$COUNTER<$REPSである限り繰り返す
-while [ $COUNTERA -lt $REPS ]; do
-
-   echo "$COUNTERA"
-   #新Random seed値をYに代入
-   #bc : 小数を扱える計算処理コマンド。echo 計算式 | bc
-   Y=`echo "$Y + 0.0001" | bc`
-   echo $Y
-
-   #ConfigファイルのRandom seedを書き換え
-   sed -i -e "s/$X/$Y/g" <config file path & name>
-
-   let COUNTERB=COUNTERB+1
-   #Configファイルの出力先フォルダを書き換え
-   #rep{Number}dir → rep{Number+1}dir
-   sed -i -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" /lustre/k.atsumi/Config/dis_link_disruptive_natsel0.3.cfg
-   echo $X
-
-   #Run simulation
-   <admixemp file path> <config file path & name> 
-
-   #X becomes the next random seed number
-   X=`echo "$X + 0.0001" | bc`
-
-   #COUNTERを1つ進める
-   #let : 整数のみの四則演算や論理演算を含む算術式を評価
-   let COUNTERA=COUNTERA+1
-
-done
-wait
+Remove unused result files
 
 ```
+cd /lustre/k.atsumi
+# Remove all marker, genes, natselprobdump files in the subdirectories
+find ./ -name "*markers.txt" -delete
+find ./ -name "*natselprobdump.txt" -delete
+find ./ -name "*genes.txt" -delete
+```
+
 
 # Old codes
 
@@ -651,56 +607,5 @@ wait
 #   gf[2+g_chrom*42, "name"], "+", gf[2+g_chrom*43, "name"]
 #   )
 # 
-# 
-#   paste(
-#     "#!/bin/bash",
-#     paste("#PBS -N hyb", sexsel, gset, sep = "_"),
-#     "#PBS -q blade",
-#     "#PBS -l nodes=1:ppn=16,mem=80gb,walltime=48:00:00",
-#     "module load gcc",
-#     "REPS=101",
-#     "COUNTERA=0",
-#     "COUNTERB=0",
-#     "X=.1356",
-#     "Y=.1356",
-#     "while [ $COUNTERA -lt $REPS ]; do",
-#     " echo \"$COUNTERA\"",
-#     " Y=`echo \"$Y + 0.0001\" | bc`",
-#     # " echo $Y",
-#     paste0(" sed -i -e \"s/$X/$Y/g\" /lustre/k.atsumi/Config/", gset, "_", sexsel, "_natsel0.1.cfg"),
-#     paste0(" sed -i -e \"s/$X/$Y/g\" /lustre/k.atsumi/Config/", gset, "_", sexsel, "_natsel0.3.cfg"),
-#     paste0(" sed -i -e \"s/$X/$Y/g\" /lustre/k.atsumi/Config/", gset, "_", sexsel, "_natsel0.7.cfg"),
-#     paste0(" sed -i -e \"s/$X/$Y/g\" /lustre/k.atsumi/Config/", gset, "_", sexsel, "_natsel1.cfg"),
-#     " let COUNTERB=COUNTERB+1",
-#     paste0(" sed -i -e \"s/rep${COUNTERA}dir/rep${COUNTERB}dir/g\" /lustre/k.atsumi/Config/", gset, "_", sexsel, "_natsel0.1.cfg"),
-#     paste0(" sed -i -e \"s/rep${COUNTERA}dir/rep${COUNTERB}dir/g\" /lustre/k.atsumi/Config/", gset, "_", sexsel, "_natsel0.3.cfg"),
-#     paste0(" sed -i -e \"s/rep${COUNTERA}dir/rep${COUNTERB}dir/g\" /lustre/k.atsumi/Config/", gset, "_", sexsel, "_natsel0.7.cfg"),
-#     paste0(" sed -i -e \"s/rep${COUNTERA}dir/rep${COUNTERB}dir/g\" /lustre/k.atsumi/Config/", gset, "_", sexsel, "_natsel1.cfg"),
-#     # " echo $X",
-#     paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_b0h0.cfg &"),
-#     paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_b0h0.1.cfg &"),
-#     paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_b0h0.4.cfg &"),
-#     paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_b0h0.8.cfg &"),
-#     paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_b0.1h0.cfg &"),
-#     paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_b0.1h0.1.cfg &"),
-#     paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_b0.1h0.4.cfg &"),
-#     paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_b0.1h0.8.cfg &"),
-#     paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_b0.4h0.cfg &"),
-#     paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_b0.4h0.1.cfg &"),
-#     paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_b0.4h0.4.cfg &"),
-#     paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_b0.4h0.8.cfg &"),
-#     paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_b0.8h0.cfg &"),
-#     paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_b0.8h0.1.cfg &"),
-#     paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_b0.8h0.4.cfg &"),
-#     paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_b0.8h0.8.cfg &"),
-#     "wait",
-#     " X=`echo \"$X + 0.0001\" | bc`",
-#     " let COUNTERA=COUNTERA+1",
-#     "done",
-#     # "wait",
-#     sep = "\n"
-#     ) %>% 
-#     return()
-
 
 ```
