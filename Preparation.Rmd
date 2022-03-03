@@ -178,8 +178,9 @@ make_bash <- function(gset = "", sexsel = "", s = "") {
     ) %>% 
     cat(., "\n", append = FALSE, file = f) #Renew file
   
-  for(sb in s){
-    for(sh in s){
+  #Repeat for each combinaiton of incompatibilities (BDMI, Underdominance)
+  for(sb in s){   #BDMI
+    for(sh in s){ #Underdominance - against Heterozygotes
       
       paste(
         # Change random seed ($X->$Y) and output folder (${COUNTERA}->${COUNTERB})
@@ -583,9 +584,9 @@ Remove unused result files
 ```
 cd /lustre/k.atsumi
 # Remove all marker, genes, natselprobdump files in the subdirectories
-find ./ -name "*markers.txt" -delete
-find ./ -name "*natselprobdump.txt" -delete
-find ./ -name "*genes.txt" -delete
+find ./ -name "*markers.txt" -delete        #Marker files
+find ./ -name "*natselprobdump.txt" -delete #? Unused fle
+find ./ -name "*genes.txt" -delete          #Genes files
 ```
 
 
