@@ -45,11 +45,11 @@ inherit_table <- tibble(
   column_to_rownames("rowname")
 
 
-#' Title: load_simul
-#' Load simulation result
-#' @locus l: Number of locus
+#' Title: ext_count
+#' Load simulation result and Extract individual count data for each phenotype
+#' @param gset: Genome setting
 #' @param sexsel: Sexual selection style
-#' @param gen: Generations to simulate
+#' @param gen: Simulated generations
 ext_count <- function(gset = "", sexsel = "", gens = c(1:100)) {
   
   for(bdmi in c(0, 0.1, 0.4, 0.8)) {
@@ -57,10 +57,16 @@ ext_count <- function(gset = "", sexsel = "", gens = c(1:100)) {
       
       # Load simulation data. Repeat for all generation files
       foreach(iter = c("0","0_1","0_10","0_100","0_11","0_12","0_13","0_14","0_15","0_16","0_17","0_18","0_19","0_2","0_20","0_21","0_22","0_23","0_24","0_25","0_26","0_27","0_28","0_29","0_3","0_30","0_31","0_32","0_33","0_34","0_35","0_36","0_37","0_38","0_39","0_4","0_40","0_41","0_42","0_43","0_44","0_45","0_46","0_47","0_48","0_49","0_5","0_50","0_51","0_52","0_53","0_54","0_55","0_56","0_57","0_58","0_59","0_6","0_60","0_61","0_62","0_63","0_64","0_65","0_66","0_67","0_68","0_69","0_7","0_70","0_71","0_72","0_73","0_74","0_75","0_76","0_77","0_78","0_79","0_8","0_80","0_81","0_82","0_83","0_84","0_85","0_86","0_87","0_88","0_89","0_9","0_90","0_91","0_92","0_93","0_94","0_95","0_96","0_97","0_98","0_99"), .combine = 'rbind') %do% {
-        foreach(g = gens, .combine = 'rbind') %dopar% {  
+        
+        #Because generation length vary among params & iterations, obtain generation length 
+        maxgen <- length(list.files(
+          paste0("D:/Simulation/Result/", gset, "_", sexsel, "_b", bdmi, "h", ud, "/", iter)
+            ))/2-1
+        
+        foreach(g = 1:maxgen, .combine = 'rbind') %dopar% {  
         
           # Read tab delimited files for phenotype
-          read_tsv(paste0("./Result/", gset, "_", sexsel, "_b", bdmi, "h", ud, "/", iter, "/Gen", g, "_phenotypes.txt"), show_col_types = FALSE) %>%
+          read_tsv(paste0("D:/Simulation/Result/", gset, "_", sexsel, "_b", bdmi, "h", ud, "/", iter, "/Gen", g, "_phenotypes.txt"), show_col_types = FALSE) %>%
             as_tibble %>%  
             filter(pop == 3) %>%                     # Use only hybrid population
             dplyr::select("Signal0") %>% 
@@ -78,39 +84,48 @@ ext_count <- function(gset = "", sexsel = "", gens = c(1:100)) {
         } %>% 
         mutate(Freq = nPheno/nGen*100) %>% 
         write_csv(paste0("Data/count_", gset, "_", sexsel, "_b", bdmi, "h", ud, ".csv"))
-  
     }}
   
   }
 
 
-ext_count <- function(gset = "", sexsel = "", gens = c(1:100)) {
+#' Title: ext_stat
+#' Load simulation result and Extract mean & variance from phenostats file
+#' @param gset: Genome setting
+#' @param sexsel: Sexual selection style
+#' @param gen: Simulated generations
+ext_stat <- function(gset = "", sexsel = "") {  #, gens = c(1:100)
   
   for(bdmi in c(0, 0.1, 0.4, 0.8)) {
     for(ud in c(0, 0.1, 0.4, 0.8)) {
       
       # Load simulation data. Repeat for all generation files
       foreach(iter = c("0","0_1","0_10","0_100","0_11","0_12","0_13","0_14","0_15","0_16","0_17","0_18","0_19","0_2","0_20","0_21","0_22","0_23","0_24","0_25","0_26","0_27","0_28","0_29","0_3","0_30","0_31","0_32","0_33","0_34","0_35","0_36","0_37","0_38","0_39","0_4","0_40","0_41","0_42","0_43","0_44","0_45","0_46","0_47","0_48","0_49","0_5","0_50","0_51","0_52","0_53","0_54","0_55","0_56","0_57","0_58","0_59","0_6","0_60","0_61","0_62","0_63","0_64","0_65","0_66","0_67","0_68","0_69","0_7","0_70","0_71","0_72","0_73","0_74","0_75","0_76","0_77","0_78","0_79","0_8","0_80","0_81","0_82","0_83","0_84","0_85","0_86","0_87","0_88","0_89","0_9","0_90","0_91","0_92","0_93","0_94","0_95","0_96","0_97","0_98","0_99"), .combine = 'rbind') %do% {
-        foreach(g = gens, .combine = 'rbind') %dopar% {  
         
-          # Read tab delimited files for phenotype
-          read_tsv(paste0("./Result/", gset, "_", sexsel, "_b", bdmi, "h", ud, "/", iter, "/Gen", g, "_phenostats.txt"), show_col_types = FALSE) %>%
+        #Because generation length vary among params & iterations, obtain generation length 
+        maxgen <- length(list.files(
+          paste0("D:/Simulation/Result/", gset, "_", sexsel, "_b", bdmi, "h", ud, "/", iter)
+            ))/2-1
+        
+        foreach(g = 1:maxgen, .combine = 'rbind') %dopar% {  
+        
+          # Read tab delimited files for phenotype from HDD
+          read_tsv(paste0("D:/Simulation/Result/", gset, "_", sexsel, "_b", bdmi, "h", ud, "/", iter, "/Gen", g, "_phenostats.txt"), show_col_types = FALSE, col_names = FALSE) %>%
             as_tibble %>%  
             filter(
-              X1 == 3,
-              X2 == "Hybridindex" | X2 == "Pref0" | X2 == "Signal0"
+              .[1] == 3,
+              .[2] == "Hybridindex" | .[2] == "Pref0" | .[2] == "Signal0"
               ) %>% 
-            select(-"X1") %>% 
             mutate(Generation = g)
           } %>% 
           mutate(Iter = iter) #Add column indicating iteration
         } %>% 
+        select(-"X1") %>%         
         write_csv(paste0("Data/mean_", gset, "_", sexsel, "_b", bdmi, "h", ud, ".csv"))
   
     }}
   
   }
-
 
 
 # Plot settings
@@ -131,22 +146,7 @@ cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#0072B2", "#D55E00",
 
 ```{r}
 
-tmp_count <- read_csv("Data/dis_link_disruptive_b0h0.csv", show_col_types = FALSE) %>% 
-  select(-starts_with("n")) %>% 
-  filter(Freq == 0) %>% 
-  mutate_at(vars("Signal0", "Iter"), as.factor) %>% #Grouping variables
-  group_by(Iter, Signal0) %>% 
-  summarise(Extinct_time = min(Generation))         #Extract extinction time
-
-
-tmp_mean <- read_tsv("Result_raw/dis_unlink_heterorandom_b0.8h0.1/0_22/Gen2_phenostats.txt", show_col_types = FALSE, col_names = FALSE) %>% 
-  filter(
-    X1 == 3,
-    X2 == "Hybridindex" | X2 == "Pref0" | X2 == "Signal0"
-    ) %>% 
-  select(-"X1") %>% 
-  mutate(Generation = 2)
-
+# ext_stat(gset = "dis_link", sexsel = "disruptive")
 
 
 
