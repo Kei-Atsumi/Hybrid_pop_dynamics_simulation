@@ -150,6 +150,19 @@ cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#0072B2", "#D55E00",
 
 
 
+tmp <- read_csv("Data/mean_dis_link_disruptive_b0.1h0.4.csv", show_col_types=FALSE) %>% 
+  filter(X2 == "Signal0") %>% 
+  select("Iter", "Generation", "X3") %>% 
+  mutate_at("Iter", as.factor) %>% 
+  group_by(Iter)
+  
+
+tmp_gens <- tmp %>% 
+  filter(X3 == "1[0]" | X3 == "0[0]") %>%     #Generations with fixed genotype
+  filter(Generation == min(Generation)) %>%   #Time that genotype was fixed
+  rename("Gen_fix" = "Generation", "Genotype" = "X3") %>%  #
+  left_join(., summarise(tmp, Gen_ext = n()), by = "Iter") #Combine with simul length
+
 ```
 
 
