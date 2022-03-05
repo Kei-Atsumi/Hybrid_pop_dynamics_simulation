@@ -27,8 +27,8 @@ pacman::p_load(
  , RcppRoll  # window functions
  , reshape2
  , foreach   # Pararel
+ , knitr     # rmarkdown
  # , magrittr  # Extend pipe
- # , knitr     # rmarkdown
  # , kableExtra # nice tables
  # , pander     # nice tables
  # , patchwork
@@ -147,6 +147,7 @@ cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#0072B2", "#D55E00",
 ```{r}
 
 # ext_stat(gset = "dis_link", sexsel = "disruptive")
+# ext_stat(gset = "dis_link", sexsel = "flip")
 
 
 
@@ -187,17 +188,8 @@ inherit_table %>%
   kable("html", caption = "**Trait \\ Preference**") %>% 
   kable_styling("striped", position = "left", full_width = F)
 
-inherit_table %>% 
-
-
 cap = "Disatractive hybrids"
 
-dat <- foreach(locus = 1:2, .combine = 'rbind') %do% {
-  foreach(ns = c(0.3, 1), .combine = 'rbind') %do% {
-    load_simul(l = locus, sexsel = "disruptive", natsel = ns)
-    } } %>% 
-  summarise_simul()
-levels(dat$Locus) <- c("Linked", "Unlinked")
 
 dat %>% ggplot(aes(x = Generation, y = Freq, colour = Signal0, group = Signal0)) +
   geom_line() +
@@ -226,12 +218,6 @@ inherit_table %>%
 
 cap = "Self-reference assortative mating"
 
-dat <- foreach(locus = 1:2, .combine = 'rbind') %do% {
-  foreach(ns = c(0.3, 1), .combine = 'rbind') %do% {
-    load_simul(l = locus, sexsel = "selfref", natsel = ns) 
-    } } %>% 
-  summarise_simul()
-levels(dat$Locus) <- c("Linked", "Unlinked")
 
 dat %>% ggplot(aes(x = Generation, y = Freq, colour = Signal0, group = Signal0)) +
   geom_line() +
