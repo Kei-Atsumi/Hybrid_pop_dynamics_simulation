@@ -39,8 +39,8 @@ options(knitr.kable.NA = '', scipen=100)  # do not show numbers using exponentia
 
 # Make inherit style table
 inherit_table <- tibble(
-  "rowname" = c("TT", "Tt", "tt"),
-  "PP" = NA, "Pp" = NA, "pp" = NA
+  "rowname" = c("tt", "Tt", "TT"),
+  "pp" = NA, "Pp" = NA, "PP" = NA
   ) %>% 
   column_to_rownames("rowname")
 
@@ -64,7 +64,6 @@ ext_count <- function(gset = "", sexsel = "", gens = c(1:100)) {
             ))/2-1
         
         foreach(g = 1:maxgen, .combine = 'rbind') %dopar% {  
-        
           # Read tab delimited files for phenotype
           read_tsv(paste0("D:/Simulation/Result/", gset, "_", sexsel, "_b", bdmi, "h", ud, "/", iter, "/Gen", g, "_phenotypes.txt"), show_col_types = FALSE) %>%
             as_tibble %>%  
@@ -78,7 +77,6 @@ ext_count <- function(gset = "", sexsel = "", gens = c(1:100)) {
               nGen = sum(nPheno),
               Generation = g
               ) 
-          
           } %>% 
           mutate(Iter = iter) #Add column indicating iteration
         } %>% 
@@ -146,21 +144,37 @@ cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#0072B2", "#D55E00",
 
 ```{r}
 
-ext_stat(gset = "dis_link", sexsel = "pdominance")
+# ext_stat(gset = "dis_link", sexsel = "pdominance")
 
 
-tmp <- read_csv("Data/mean_dis_link_disruptive_b0.1h0.4.csv", show_col_types=FALSE) %>% 
-  filter(X2 == "Signal0") %>% 
-  select("Iter", "Generation", "X3") %>% 
-  mutate_at("Iter", as.factor) %>% 
-  group_by(Iter)
+gset = "dis_link"
+sexsel = "flip"
 
-tmp_gens <- tmp %>% 
-  filter(X3 == "1[0]" | X3 == "0[0]") %>%     #Generations with fixed genotype
-  filter(Generation == min(Generation)) %>%   #Time that genotype was fixed
-  rename("Gen_fix" = "Generation", "Genotype" = "X3") %>%  #
-  left_join(., summarise(tmp, Gen_ext = n()), by = "Iter") #Combine with simul length
+data <- foreach(bdmi = c(0, 0.1, 0.4, 0.8), .combine = 'rbind') %do% {
+  foreach(ud = c(0, 0.1, 0.4, 0.8), .combine = 'rbind') %do% {
+    tmp <- read_csv(show_col_types=FALSE,
+      paste0("Data/mean_", gset, "_", sexsel, "_b", bdmi, "h", ud, ".csv")) %>% 
+      filter(X2 == "Signal0") %>% 
+      select("Iter", "Generation", "X3") %>% 
+      mutate_at("Iter", as.factor) %>% 
+      group_by(Iter)
+    tmp %>% 
+      filter(X3 == "1[0]" | X3 == "0[0]") %>%     #Generations with fixed genotype
+      filter(Generation == min(Generation)) %>%   #Time that genotype was fixed
+      rename("Gen_fix" = "Generation", "Genotype" = "X3") %>%  #
+      left_join(summarise(tmp, Gen_ext = n()), ., by = "Iter") %>%  #Combine with simul length
+      mutate(s_underdominance = as.factor(ud))  
+    } %>% 
+    mutate(s_bdmi = as.factor(bdmi))  
+  } %>% 
+  mutate(s = str_c(s_underdominance, s_bdmi, sep = ", "))
 
+ggplot(data, aes(x = s, y = Gen_fix)) +
+  geom_violin(fill = "grey80", colour = NA) +
+  geom_point(aes(colour = Genotype), position = "jitter", size = 1) +
+  xlab("s (Underdominance, BDMI)") +  ylab ("Generations to fix") +
+  mytheme
+  
 
 
 ```
@@ -180,9 +194,9 @@ tmp_gens <- tmp %>%
 ```{r}
 
 # Visualize inheritance pattern
-inherit_table$PP <- c(0.745,0.01,0.245)
+inherit_table$PP <- c(0.245,0.01,0.745)
 inherit_table$Pp <- c(0.495,0.01,0.495)
-inherit_table$pp <- c(0.245,0.01,0.745)
+inherit_table$pp <- c(0.745,0.01,0.245)
 inherit_table %>% 
   kable("html", caption = "**Trait \\ Preference**") %>% 
   kable_styling("striped", position = "left", full_width = F)
@@ -205,9 +219,9 @@ dat %>% ggplot(aes(x = Generation, y = Freq, colour = Signal0, group = Signal0))
 
 ```{r}
 # Visualize inheritance pattern
-inherit_table$PP <- c(0.99,0.005,0.005)
+inherit_table$PP <- c(0.005,0.005,0.99)
 inherit_table$Pp <- c(0.005,0.99,0.005)
-inherit_table$pp <- c(0.005,0.005,0.99)
+inherit_table$pp <- c(0.99,0.005,0.005)
 # Output inheritance style table
 inherit_table %>% 
   kable("html", caption = "**Trait \\ Preference**") %>% 
@@ -233,9 +247,9 @@ dat %>% ggplot(aes(x = Generation, y = Freq, colour = Signal0, group = Signal0))
 ```{r}
 
 # Visualize inheritance pattern
-inherit_table$PP <- c(0.99,0.005,0.005)
+inherit_table$pp <- c(0.99,0.005,0.005)
 inherit_table$Pp <- c(0.005,0.005,0.99)
-inherit_table$pp <- c(0.005,0.005,0.99)
+inherit_table$PP <- c(0.005,0.005,0.99)
 inherit_table %>% 
   kable("html", caption = "**Trait \\ Preference**") %>% 
   # here you can add the vertical line
@@ -265,8 +279,8 @@ dat %>% ggplot(aes(x = Generation, y = Freq, colour = Signal0, group = Signal0))
 ```{r}
 
 # Visualize inheritance pattern
-inherit_table$PP <- c(0.99,0.005,0.005)
-inherit_table$Pp <- c(0.99,0.005,0.005)
+inherit_table$PP <- c(0.005,0.005,0.99)
+inherit_table$Pp <- c(0.005,0.005,0.99)
 inherit_table$pp <- c(1/3,1/3,1/3)
 inherit_table %>% 
   kable("html", caption = "**Trait \\ Preference**") %>% 
@@ -298,9 +312,9 @@ Heterozygotes and recessive are favored (why??)
 ```{r}
 
 # Visualize inheritance pattern
-inherit_table$PP <- c(0.99,0.005,0.005)
+inherit_table$pp <- c(0.99,0.005,0.005)
 inherit_table$Pp <- c(1/3,1/3,1/3)
-inherit_table$pp <- c(0.005,0.005,0.99)
+inherit_table$PP <- c(0.005,0.005,0.99)
 inherit_table %>% 
   kable("html", caption = "**Trait \\ Preference**") %>% 
   kable_styling("striped", position = "left", full_width = F)
@@ -331,9 +345,9 @@ Recessive is favored, and heterozygote is not favored
 ```{r}
 
 # Visualize inheritance pattern
-inherit_table$PP <- c(0.99,0.005,0.005)
+inherit_table$pp <- c(0.99,0.005,0.005)
 inherit_table$Pp <- c(0.49,0.01,0.49)
-inherit_table$pp <- c(0.005,0.005,0.99)
+inherit_table$PP <- c(0.005,0.005,0.99)
 inherit_table %>% 
   kable("html", caption = "**Trait \\ Preference**") %>% 
   kable_styling("striped", position = "left", full_width = F)
@@ -362,9 +376,9 @@ dat %>% ggplot(aes(x = Generation, y = Freq, colour = Signal0, group = Signal0))
 ```{r}
 
 # Visualize inheritance pattern
-inherit_table$PP <- c(0.245,0.745,0.01)
+inherit_table$pp <- c(0.245,0.745,0.01)
 inherit_table$Pp <- c(0.005,0.99,0.005)
-inherit_table$pp <- c(0.01,0.745,0.245)
+inherit_table$PP <- c(0.01,0.745,0.245)
 inherit_table %>% 
   kable("html", caption = "**Trait \\ Preference**") %>% 
   kable_styling("striped", position = "left", full_width = F)
