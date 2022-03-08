@@ -1,0 +1,136 @@
+HaploidChromosomeNum = 26
+RandomSeed = 0.99
+Pop1AvgAlleleFreq = 1
+Pop1AvgAlleleFreqStdev = 0
+Pop2AvgAlleleFreq = 1
+Pop2AvgAlleleFreqStdev = 0
+:chr 1	len = 1e+007	centromere = 1e+007
+
+Num	Position Percentage	Position Abs.	Freq. Pop 1	Freq. Pop 2
+1	0.635566	6.35566e+006	1	0
+2	0.812758	8.12758e+006	1	0
+:chr 2	len = 1e+007	centromere = 1e+007
+
+Num	Position Percentage	Position Abs.	Freq. Pop 1	Freq. Pop 2
+1	0.457851	4.57851e+006	1	0
+2	0.632783	6.32783e+006	1	0
+:chr 3	len = 1e+007	centromere = 1e+007
+
+Num	Position Percentage	Position Abs.	Freq. Pop 1	Freq. Pop 2
+1	0.0168683	168683	1	0
+2	0.0455353	455353	1	0
+:chr 4	len = 1e+007	centromere = 1e+007
+
+Num	Position Percentage	Position Abs.	Freq. Pop 1	Freq. Pop 2
+1	0.0614098	614098	1	0
+2	0.557799	5.57799e+006	1	0
+:chr 5	len = 1e+007	centromere = 1e+007
+
+Num	Position Percentage	Position Abs.	Freq. Pop 1	Freq. Pop 2
+1	0.0657565	657565	1	0
+2	0.839803	8.39803e+006	1	0
+:chr 6	len = 1e+007	centromere = 1e+007
+
+Num	Position Percentage	Position Abs.	Freq. Pop 1	Freq. Pop 2
+1	0.319125	3.19125e+006	1	0
+2	0.82427	8.2427e+006	1	0
+:chr 7	len = 1e+007	centromere = 1e+007
+
+Num	Position Percentage	Position Abs.	Freq. Pop 1	Freq. Pop 2
+1	0.195346	1.95346e+006	1	0
+2	0.505812	5.05812e+006	1	0
+:chr 8	len = 1e+007	centromere = 1e+007
+
+Num	Position Percentage	Position Abs.	Freq. Pop 1	Freq. Pop 2
+1	0.867608	8.67608e+006	1	0
+2	0.97956	9.7956e+006	1	0
+:chr 9	len = 1e+007	centromere = 1e+007
+
+Num	Position Percentage	Position Abs.	Freq. Pop 1	Freq. Pop 2
+1	0.02551	255100	1	0
+2	0.114718	1.14718e+006	1	0
+:chr 10	len = 1e+007	centromere = 1e+007
+
+Num	Position Percentage	Position Abs.	Freq. Pop 1	Freq. Pop 2
+1	0.178258	1.78258e+006	1	0
+2	0.575271	5.75271e+006	1	0
+:chr 11	len = 1e+007	centromere = 1e+007
+
+Num	Position Percentage	Position Abs.	Freq. Pop 1	Freq. Pop 2
+1	0.800233	8.00233e+006	1	0
+2	0.8996	8.996e+006	1	0
+:chr 12	len = 1e+007	centromere = 1e+007
+
+Num	Position Percentage	Position Abs.	Freq. Pop 1	Freq. Pop 2
+1	0.184203	1.84203e+006	1	0
+2	0.635113	6.35113e+006	1	0
+:chr 13	len = 1e+007	centromere = 1e+007
+
+Num	Position Percentage	Position Abs.	Freq. Pop 1	Freq. Pop 2
+1	0.0626319	626319	1	0
+2	0.436784	4.36784e+006	1	0
+:chr 14	len = 1e+007	centromere = 1e+007
+
+Num	Position Percentage	Position Abs.	Freq. Pop 1	Freq. Pop 2
+1	0.296969	2.96969e+006	1	0
+2	0.649343	6.49343e+006	1	0
+:chr 15	len = 1e+007	centromere = 1e+007
+
+Num	Position Percentage	Position Abs.	Freq. Pop 1	Freq. Pop 2
+1	0.0870782	870782	1	0
+2	0.470554	4.70554e+006	1	0
+:chr 16	len = 1e+007	centromere = 1e+007
+
+Num	Position Percentage	Position Abs.	Freq. Pop 1	Freq. Pop 2
+1	0.160383	1.60383e+006	1	0
+2	0.870717	8.70717e+006	1	0
+:chr 17	len = 1e+007	centromere = 1e+007
+
+Num	Position Percentage	Position Abs.	Freq. Pop 1	Freq. Pop 2
+1	0.0820454	820454	1	0
+2	0.575	5.75e+006	1	0
+:chr 18	len = 1e+007	centromere = 1e+007
+
+Num	Position Percentage	Position Abs.	Freq. Pop 1	Freq. Pop 2
+1	0.00783211	78321.1	1	0
+2	0.557573	5.57573e+006	1	0
+:chr 19	len = 1e+007	centromere = 1e+007
+
+Num	Position Percentage	Position Abs.	Freq. Pop 1	Freq. Pop 2
+1	0.00986413	98641.3	1	0
+2	0.613542	6.13542e+006	1	0
+:chr 20	len = 1e+007	centromere = 1e+007
+
+Num	Position Percentage	Position Abs.	Freq. Pop 1	Freq. Pop 2
+1	0.399188	3.99188e+006	1	0
+2	0.848494	8.48494e+006	1	0
+:chr 21	len = 1e+007	centromere = 1e+007
+
+Num	Position Percentage	Position Abs.	Freq. Pop 1	Freq. Pop 2
+1	0.103816	1.03816e+006	1	0
+2	0.420818	4.20818e+006	1	0
+:chr 22	len = 1e+007	centromere = 1e+007
+
+Num	Position Percentage	Position Abs.	Freq. Pop 1	Freq. Pop 2
+1	0.139539	1.39539e+006	1	0
+2	0.32277	3.2277e+006	1	0
+:chr 23	len = 1e+007	centromere = 1e+007
+
+Num	Position Percentage	Position Abs.	Freq. Pop 1	Freq. Pop 2
+1	0.0794139	794139	1	0
+2	0.239074	2.39074e+006	1	0
+:chr 24	len = 1e+007	centromere = 1e+007
+
+Num	Position Percentage	Position Abs.	Freq. Pop 1	Freq. Pop 2
+1	0.352404	3.52404e+006	1	0
+2	0.998465	9.98465e+006	1	0
+:chr 25	len = 1e+007	centromere = 1e+007
+
+Num	Position Percentage	Position Abs.	Freq. Pop 1	Freq. Pop 2
+1	0.256082	2.56082e+006	1	0
+2	0.361649	3.61649e+006	1	0
+:chr 26	len = 1e+007	centromere = 1e+007
+
+Num	Position Percentage	Position Abs.	Freq. Pop 1	Freq. Pop 2
+1	0.326106	3.26106e+006	1	0
+2	0.895167	8.95167e+006	1	0
