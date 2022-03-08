@@ -1,11 +1,11 @@
 name	Chromosome	position	Allele1	Allele1val	Allele2	Allele2val	Mode	Freqal1pop1	Freqal1pop2
 chr1_50748	1	50748	S	1	s	0	Hemizygous	0.5	0.5
-chr2_30677	2	30677	I	5	i	0	Additive	1	0
-chr2_42691	2	42691	I	0.5	i	0	Additive	1	0
-chr3_69310	3	69310	I	0	i	10	Additive	1	0
-chr3_8514	3	8514	I	0.5	i	0	Additive	1	0
-chr4_22544	4	22544	H	0.5	h	0	Additive	1	0
-chr4_27453	4	27453	H	0.5	h	0	Additive	1	0
+chr2_30677	2	30677	A	5	a	0	Additive	1	0
+chr2_42691	2	42691	A	0.5	a	0	Additive	1	0
+chr3_69310	3	69310	A	0	a	10	Additive	1	0
+chr3_8514	3	8514	A	0.5	a	0	Additive	1	0
+chr4_22544	4	22544	A	0.5	a	0	Additive	1	0
+chr4_27453	4	27453	A	0.5	a	0	Additive	1	0
 chr5_27231	5	27231	A	0.5	a	0	Additive	1	0
 chr5_61583	5	61583	A	0.5	a	0	Additive	1	0
 chr6_42967	6	42967	A	0.5	a	0	Additive	1	0

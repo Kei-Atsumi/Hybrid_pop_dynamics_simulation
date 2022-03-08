@@ -446,59 +446,6 @@ dat %>% ggplot(aes(x = Generation, y = Signal0, size = Freq)) +
 
 ```
 
-<div style="margin-bottom:90px;">
-</div>
-
-# Complex models
-
-## Choosiness
-
-Here I set preference function as follows:
-
-$1/e^{(x-y)^2/z^2}$
-
-Where 
-
-- $x$, *the most favored courter phenotype*
-- $y$, *Courter phenotype*
-- $z$, *Promiscuity*, inverse of Choosiness
-
-Draw preference function in several promiscuity
-
-```{r}
-
-for(P in c(3, 4, 5, 6, 9, 15)){
-  curve(  
-    # Function
-    1/exp( ( x^2 )/( P^2 ) ) , 
-    # Plot range
-    from = -16, to = 16, ylim = c(0,1), 
-    main = paste("Promiscuity =", P)
-    )
-  }
-
-for(P in c(3, 4, 5, 6, 9, 11)){
-  curve(  
-    # Function
-    1-exp( -( x^2 )/( P^2 ) ) , 
-    # Plot range
-    from = -16, to = 16, ylim = c(0,1), 
-    main = paste("Promiscuity =", P)
-    )
-  }
-
-for(P in c(1:7,9:16)){
-  curve(  
-    # Function
-    1/exp( ( x^2 )/(  (8/(P-8)) ^2 ) ) , 
-    # Plot range
-    from = -16, to = 16, ylim = c(0,1), 
-    main = paste("Pref0 =", P)
-    )
-  }
-
-```
-
 
 ```{r}
 

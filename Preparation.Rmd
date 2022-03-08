@@ -58,12 +58,6 @@ make_genome <- function(cn = chrom_n, gt = g_total) {
     mutate(name = str_c("chr", Chromosome, "_", position, sep = "")) %>% 
     dplyr::select(name, Chromosome:Freqal1pop2)
   
-  # Epistasis
-  gf[2, "Allele1val"] <- 5
-  gf[2, "Allele2val"] <- 0
-  gf[2+g_chrom, "Allele1val"] <- 0
-  gf[2+g_chrom, "Allele2val"] <- 10
-  
   return(gf)
   
   }
@@ -80,7 +74,7 @@ make_config <- function(
   gset = "", sexsel = "", bdmi = "", h = "", gen = 100, mig = 0, maten = 50
   ) {
 
-  paste(
+  head <- paste(
     "RandomSeed\t=\t.1356",         
     paste0("MarkerFile\t=\t/lustre/k.atsumi/Config/markers_", gset, ".txt"),
     # "MarkerFile\t=\tmarkers.txt",    #Marker File Containing marker info
@@ -89,11 +83,29 @@ make_config <- function(
     "UseUniformRec\t=\tyes",		# ignore predefined breakpoints above, use uniform.
     "IgnoreMarkerFreq\t=\tyes", #setting this option to yes will treat all markers as ancestry informative, regardless of their frequency specified in the markers file
     # "DumpNatSelProb\t=\tOff", 
-    paste0("GeneFile\t=\t/lustre/k.atsumi/Config/genes_", gset, ".txt"),
-    # "GeneFile\t=\t/lustre/k.atsumi/Config/genes.txt",
-    paste0("PhenotypeFile\t=\t/lustre/k.atsumi/Config/phenotypes_", gset, ".txt"),
     paste0("OutputFolder\t=\t/lustre/k.atsumi/Result/", gset, "_", sexsel, "_b", bdmi, "h", h, "/0"), #Output folder
-    paste0("NaturalSelection\t=\t/lustre/k.atsumi/Config/naturalsel_b", bdmi, "h", h, ".txt"),                     #Natural selection file
+    sep = "\n"
+    )
+  
+  mid <- if(gset == "quant") {
+    #Dynamic genes & phenotype files
+    paste(
+      "GeneFile\t=\t/lustre/k.atsumi/Config/genes_quant_random0.txt",
+      "PhenotypeFile\t=\t/lustre/k.atsumi/Config/phenotypes_quant_random0.txt",
+      paste0("NaturalSelection\t=\t/lustre/k.atsumi/Config/naturalsel_quant_b", bdmi, "h", h, ".txt"),                     #Natural selection file
+      sep = "\n"
+      )
+  } else {
+    #Static genes & phenotype files
+    paste(
+      paste0("GeneFile\t=\t/lustre/k.atsumi/Config/genes_", gset, ".txt"),
+      paste0("PhenotypeFile\t=\t/lustre/k.atsumi/Config/phenotypes_", gset, ".txt"),
+      paste0("NaturalSelection\t=\t/lustre/k.atsumi/Config/naturalsel_b", bdmi, "h", h, ".txt"),                     #Natural selection file
+      sep = "\n"
+      )
+  }
+  
+  last <-  paste(
     paste0("SexualSelection\t=\t/lustre/k.atsumi/Config/sexualsel_", sexsel, ".txt"), #Sexual selection file
     #population names:
     "pop2_name\t=\tp2",
@@ -134,8 +146,10 @@ make_config <- function(
     "NumThreads\t=\t1",
     "DisableOutputForFirst3Gens\t=\tyes",
     sep = "\n"
-    ) %>% 
-    return()
+    )
+  
+  return( paste(head, mid, last, sep = "\n") )
+  
   }
 
 
@@ -179,6 +193,11 @@ make_bash <- function(gset = "", sexsel = "", s = "") {
   for(sb in s){   #BDMI
     for(sh in s){ #Underdominance - against Heterozygotes
       
+      if(gset == "quant") {  #Change Genes & Phenotype files used
+        paste0(" sed -i -e \"s/quant_random$X/quant_random$Y/g\" /lustre/k.atsumi/Config/quant_", sexsel, "_b", sb, "h", sh, ".cfg") %>%
+          cat(., "\n", append = TRUE, file = f)
+      }
+      
       paste(
         # Change random seed ($X->$Y) and output folder (${COUNTERA}->${COUNTERB})
         paste0(" sed -i -e \"s/$X/$Y/g\" -e \"s/rep${COUNTERA}dir/rep${COUNTERB}dir/g\" /lustre/k.atsumi/Config/", gset, "_", sexsel, "_b", sb, "h", sh, ".cfg"),
@@ -204,7 +223,21 @@ make_bash <- function(gset = "", sexsel = "", s = "") {
 ```
 
 
-# Selection
+
+# Simple model settings
+
+- With sex chromosome 1
+  - Allele (S) with trait value 1 will be male
+
+- BDMI between Chrom 2 & 3
+
+- Underdominance at chrom 4
+
+- Migration happens in only first generation
+
+- Max 2000 indv for hybrid pop
+
+- Mate sampling: 50 indv
 
 ## Natural selection
 
@@ -234,21 +267,6 @@ for(bdmi in nats){
 ```
 
 
-# Simple model settings
-
-- With sex chromosome 1
-  - Allele (S) with trait value 1 will be male
-
-- BDMI between Chrom 2 & 3
-
-- Underdominance at chrom 4
-
-- Migration happens in only first generation
-
-- Max 2000 indv for hybrid pop
-
-- Mate sampling: 50 indv
-
 
 ## Gene file
 
@@ -275,6 +293,12 @@ paste("Total number of genes:", g_total)
 
 # Create gene file
 gf <- make_genome()
+# Epistasis
+gf[2, "Allele1val"] <- 5
+gf[2, "Allele2val"] <- 0
+gf[2+g_chrom, "Allele1val"] <- 0
+gf[2+g_chrom, "Allele2val"] <- 10
+
 write_tsv(gf, "./Config/genes_dis_link.txt")
 file.copy(
   "./Config/genes_dis_link.txt", "./Config/genes_dis_unlink.txt", overwrite = T
@@ -291,27 +315,14 @@ Create `phenotypes_{genome setting}.txt`. I made 3 phenotype files with genome s
 
 ```{r}
 
-Hybridindex <- paste0(
-  gf[2+g_chrom*3, "name"], "+", gf[3+g_chrom*3, "name"], "+", 
-  gf[2+g_chrom*4, "name"], "+", gf[3+g_chrom*4, "name"], "+", 
-  gf[2+g_chrom*5, "name"], "+", gf[3+g_chrom*6, "name"], "+", 
-  gf[2+g_chrom*6, "name"], "+", gf[3+g_chrom*6, "name"], "+", 
-  gf[2+g_chrom*7, "name"], "+", gf[3+g_chrom*7, "name"], "+", 
-  gf[2+g_chrom*8, "name"], "+", gf[3+g_chrom*8, "name"], "+", 
-  gf[2+g_chrom*9, "name"], "+", gf[3+g_chrom*9, "name"], "+",
-  gf[2+g_chrom*10, "name"], "+", gf[3+g_chrom*10, "name"], "+",
-  gf[2+g_chrom*11, "name"], "+", gf[3+g_chrom*11, "name"], "+",
-  gf[2+g_chrom*12, "name"], "+", gf[3+g_chrom*12, "name"]
-  )
-
 Pheno <- data.frame(
   Phenotypes = c("Sex", "Pref0", "Pref1", "Signal0", "Hybridindex", "BDMI", "Underdominance"), 
   Formula    = c(
     gf[1, "name"],   # Sex
     gf[2+g_chrom*13, "name"], # Preference (peak)
     gf[2+g_chrom*13, "name"], # Preference
-    "Signal",                # Signal, determined later according to link/unlinked with preference
-    Hybridindex,             # Hybrid Index
+    "Signal",      # Signal, determined later according to link/unlinked with preference
+    paste0(gf$name[(2+g_chrom*3):(3+g_chrom*12)], collapse = "+"),  # Hybrid Index
     paste0(gf[2, "name"], "+", gf[2+g_chrom, "name"]), # BDMI
     gf[2+g_chrom*2, "name"]  # Underdominance
     )
@@ -334,8 +345,6 @@ for(genomeset in c("dis_unlink", "dis_link")){
       for(H in nats){
         make_config(gset = genomeset, sexsel = ss, bdmi = BDMI, h = H) %>% 
           write(paste0("./Config/", genomeset, "_", ss, "_b", BDMI, "h", H, ".cfg"))
-      
-      # dir.create(paste0("/Users/katsu/Dropbox/5_Simulation/Result/", genomeset, "_", ss, "_natsel", ns)) # #出力先フォルダ作成
   }}}}
 
 ```
@@ -393,6 +402,8 @@ file.copy("./Config/markers_dis_link.txt","./Config/markers_dis_unlink.txt", ove
 
 Preference is determined not by gene, but by phenotypic distribution of the hybrid population
 
+Choosiness, Peak preference, Traits & Hybrid index are determined by 50 loci, respectively
+
 ```{r}
 
 chrom_size <- 1*10^7
@@ -423,12 +434,12 @@ Pheno_org <- data.frame(
   )
 
 # Make phenotype files with randomized positions of functional genes
-for(rseed in 1:100) {
+for(rseed in 0:100) {
   
   Pheno <- Pheno_org #Make copy of original object
   gf <- gf_org       #Make copy of original object
 
-  set.seed(rseed)
+  set.seed(rseed+1)
   #Randomly set incompatibility loci & Neutral loci (Hybrid index)
   gf$Allele1val[sample(2:nrow(gf),200)] <- c(
     rep(10, 50), #Hybrid index
@@ -454,11 +465,11 @@ for(rseed in 1:100) {
   gf_ni <- filter(gf, Allele1val == 0.5, Allele2val == 0) #Non-incompat & Non-HI loci
   
   #Trait & Preference loci
-  set.seed(rseed+100) # To make randomization repeatable
+  set.seed(rseed+101) # To make randomization repeatable
   Pheno[2,2] <- paste0(sample(gf_ni$name, 50), collapse = "+")
-  set.seed(rseed+200) # Random genes, while differentiating with above
+  set.seed(rseed+201) # Random genes, while differentiating with above
   Pheno[3,2] <- paste0(sample(gf_ni$name, 50), collapse = "+")
-  set.seed(rseed+300) # Random genes, while differentiating with above
+  set.seed(rseed+301) # Random genes, while differentiating with above
   Pheno[4,2] <- paste0(sample(gf_ni$name, 50), collapse = "+")
   
   write_tsv(Pheno, paste0("./Config/phenotypes_quant_random", rseed, ".txt"))
@@ -507,39 +518,121 @@ paste(
 
 ```
 
+## Natural selection
+
 ```{r}
 
+nats <- c(0.05, 0.01, 0.005, 0) # Variation in selection strengthw
 
-write_tsv(Pheno, "./Config/phenotypes_learn.txt")  
+for(bdmi in nats){
+  for(ud in nats){
+    paste(
+      "Population\tGen\tSelection",
+      "species1\t-1\t1",
+      "species2\t-1\t1",
+      paste0(
+        "hyb\t-1\tb=", 
+        bdmi, 
+        ", u=", 
+        ud, 
+        ", pow(1-b,BDMI) * pow(1-u,Underdominance)"  
+        ),
+      sep = "\n"
+      ) %>% 
+      write(paste0("./Config/naturalsel_quant_b", bdmi, "h", ud, ".txt"))
+}}
+
+```
+
+
+```{r}
 
 # Config file
-for(ss in c("obl_posit", "obl_negat")){
-  make_bash(gset = "learn", sexsel = ss) %>% 
-      write(paste0("./Bash/", "learn_", ss, ".sbatch.sh"))
-
-  for(BDMI in s){
-    for(H in s){
-      make_config(gset = "learn", sexsel = ss, bdmi = BDMI, h = H) %>% 
-        write(paste0("./Config/learn_", ss, "_b", BDMI, "h", H, ".cfg"))
-}}}
-
-
-
-# Config file
-for(ss in c("constchoosy", "hybridrandom")){
-  make_bash(gset = "quant", sexsel = ss) %>% 
+for(ss in c("obl_posit", "obl_negat", "constchoosy", "hybridrandom")){
+  make_bash(gset = "quant", sexsel = ss, s = nats) %>% 
       write(paste0("./Bash/", "quant_", ss, ".sbatch.sh"))
 
-  for(BDMI in s){
-    for(H in s){
+  for(BDMI in nats){
+    for(H in nats){
       make_config(gset = "quant", sexsel = ss, bdmi = BDMI, h = H) %>% 
-        write(paste0("./Config/quant", ss, "_b", BDMI, "h", H, ".cfg"))
-}}}
-
+        write(paste0("./Config/quant_", ss, "_b", BDMI, "h", H, ".cfg"))
+    }}}
 
 ```
 
 - *quant_unlink* : Trait determined by independent 16 loci which are unlinked with preference genes
+
+<div style="margin-bottom:90px;">
+</div>
+
+# Complex models
+
+## Choosiness
+
+Here I set preference function as follows:
+
+$1/e^{(x-y)^2/z^2}$
+
+Where 
+
+- $x$, *the most favored courter phenotype*
+- $y$, *Courter phenotype*
+- $z$, *Promiscuity*, inverse of Choosiness
+
+Draw preference function in several promiscuity
+
+### Positive learning model & Constant choosiness model
+
+```{r}
+
+for(P in c(5, 7, 9, 11, 15)){
+  curve(  
+    # Function
+    1/exp( ( x^2 )/( P^2 ) ) , 
+    # Plot range
+    from = -50, to = 50, ylim = c(0,1), 
+    main = paste("Promiscuity =", P)
+    )
+}
+
+```
+
+### Negative learning model
+
+```{r}
+
+for(P in c(17, 19, 21, 23)){
+  curve(  
+    # Function
+    1-exp( -( x^2 )/( P^2 ) ) , 
+    # Plot range
+    from = -50, to = 50, ylim = c(0,1), 
+    main = paste("Promiscuity =", P)
+    )
+  }
+
+```
+
+
+### Choosiness reduction model
+
+```{r}
+
+# Choosiness reduction model
+for(P in c(1, 5, 10, 15, 20, 24)){   #Courter genotype
+  a <- 90
+  curve(  
+    # Function
+    1/exp( ( x^2 )/(  (a/(P-25)) ^2 ) ) , 
+    # Plot range
+    from = -50, to = 50, ylim = c(0,1), 
+    main = paste("Pref0 =", P)
+    )
+  }
+
+```
+
+
 
 <div style="margin-bottom:70px;">
 </div>

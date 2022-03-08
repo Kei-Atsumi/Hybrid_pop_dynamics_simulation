@@ -1,0 +1,4 @@
+Population	Gen	Selection
+species1	-1	1
+species2	-1	1
+hyb	-1	b=0.05, u=0.01, pow(1-b,BDMI) * pow(1-u,Underdominance)
