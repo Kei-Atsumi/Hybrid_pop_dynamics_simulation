@@ -21,10 +21,7 @@ Here I set original function `make_genome` that creates genes file
 
 rm(list=ls())  # reset workspace
 
-pacman::p_load(
- tidyverse
- , knitr     # rmarkdown
- )
+pacman::p_load(tidyverse, knitr, magrittr)     # rmarkdown
 
 opts_chunk$set(prompt=TRUE, message=FALSE, comment="", warning = FALSE) 
 options(knitr.kable.NA = '', scipen=100)  # do not show numbers using exponential
@@ -50,9 +47,9 @@ make_genome <- function(cn = chrom_n, gt = g_total) {
     position = runif(n = gt, min = 1, max = chrom_size) %>% 
         floor(), # Integers
     # First gene: Sex determination. S vs s. Hemizygous. Freq = 0.5
-    Allele1     = c("S", rep("I", 2*g_chrom), rep("H", g_chrom), rep("A", gt - (3*g_chrom+1))),
-    Allele1val  = c(1, rep(0.5, g_total - 1)),
-    Allele2     = c("s", rep("i", 2*g_chrom), rep("h", g_chrom), rep("a", gt - (3*g_chrom+1))),
+    Allele1     = c("S", rep("A", gt - 1)),
+    Allele1val  = c(1, rep(0.5, gt - 1)),
+    Allele2     = c("s", rep("a", gt - 1)),
     Allele2val  = c(0, rep(0, gt - 1)),
     Mode        = c("Hemizygous", rep("Additive", gt - 1)),
     Freqal1pop1 = c(0.5, rep(1.0, gt - 1)),
@@ -218,7 +215,6 @@ nats <- c(0, 0.1, 0.4, 0.8)
 
 for(bdmi in nats){
   for(ud in nats){
-    
     paste(
       "Population\tGen\tSelection",
       "species1\t-1\t1",
@@ -233,7 +229,6 @@ for(bdmi in nats){
       sep = "\n"
       ) %>% 
       write(paste0("./Config/naturalsel_b", bdmi, "h", ud, ".txt"))
-
 }}
 
 ```
@@ -310,15 +305,15 @@ Hybridindex <- paste0(
   )
 
 Pheno <- data.frame(
-  Phenotypes = c("Sex", "BDMI", "Underdominance", "Pref0", "Pref1", "Signal0", "Hybridindex"), 
+  Phenotypes = c("Sex", "Pref0", "Pref1", "Signal0", "Hybridindex", "BDMI", "Underdominance"), 
   Formula    = c(
     gf[1, "name"],   # Sex
-    paste0(gf[2, "name"], "+", gf[2+g_chrom, "name"]), # BDMI
-    gf[2+g_chrom*2, "name"],  # Underdominance
     gf[2+g_chrom*13, "name"], # Preference (peak)
     gf[2+g_chrom*13, "name"], # Preference
     "Signal",                # Signal, determined later according to link/unlinked with preference
-    Hybridindex              # Hybrid Index
+    Hybridindex,             # Hybrid Index
+    paste0(gf[2, "name"], "+", gf[2+g_chrom, "name"]), # BDMI
+    gf[2+g_chrom*2, "name"]  # Underdominance
     )
   )
 
@@ -406,134 +401,75 @@ paste("Chromosone size (bp):", chrom_size)
 chrom_n <- 1 + 25
 paste("Chromosone number (with sex chrom):", chrom_n)
 
-g_chrom <- 10
+g_chrom <- 18
 paste("Genes per autosome:", g_chrom)
 
 g_total <- 1 + (chrom_n - 1)*g_chrom
 paste("Total number of genes:", g_total)
 
 # Create gene file
-gf <- make_genome()
-gf$Allele1val <- c(1.0, rep(0.5, g_total-1))
-gf$Allele2val <- 0
-gf$Allele1    <- c("S", rep("A", g_total-1))
-gf$Allele2    <- c("s", rep("a", g_total-1))
+gf_org <- make_genome()
+gf_org$Allele1val <- c(1, rep(0.5, nrow(gf_org)-1))
+gf_org$Allele2val <-0
 
-write_tsv(gf, "./Config/genes_quant.txt")
-
-Pheno[7,2] <- paste0(gf$name, collapse = "+") #Hybrd index: all genes
+Pheno_org <- data.frame(
+  Phenotypes = c("Sex", "Pref0", "Pref1", "Signal0", "Underdominance", "BDMI", "Hybridindex"), 
+  Formula    = c(
+    gf_org[1, "name"],   # Sex
+    gf_org[2+g_chrom*13, "name"], # Preference (peak)
+    gf_org[2+g_chrom*13, "name"], # Preference
+    rep(NA,4)
+    )
+  )
 
 # Make phenotype files with randomized positions of functional genes
-for(r in 1:100) {
+for(rseed in 1:100) {
   
-  set.seed(r) # To make randomization repeatable
-  Pheno[4,2] <- paste0(sample(gf$name, 70), collapse = "+")
-  set.seed(r+100) # Random genes, while differentiating with above
-  Pheno[5,2] <- paste0(sample(gf$name, 70), collapse = "+")
-  set.seed(r+200) # Random genes, while differentiating with above
-  Pheno[6,2] <- paste0(sample(gf$name, 70), collapse = "+")
+  Pheno <- Pheno_org #Make copy of original object
+  gf <- gf_org       #Make copy of original object
+
+  set.seed(rseed)
+  #Randomly set incompatibility loci & Neutral loci (Hybrid index)
+  gf$Allele1val[sample(2:nrow(gf),200)] <- c(
+    rep(10, 50), #Hybrid index
+    rep(3, 50), #Underdominance loci -> Fitness reduction if trait value is 3
+    rep(5, 50), #BDMI loci -> Fitness reduction if trait value is 24 
+    rep(0, 50)  #BDMI loci 
+    )
+  gf$Allele2val[gf$Allele1val == 0] <- 7 #BDMI loci -> Fitness reduces if trait value is 24 
+
+  write_tsv(gf, paste0("./Config/genes_quant_random", rseed, ".txt"))
   
-  write_tsv(Pheno, paste0("./Config/phenotypes_quant_random", r, ".txt"))
+  #Hybrid index
+  Pheno[7,2] <- paste0( 
+    "(", paste0(gf$name[gf$Allele1val == 10], collapse = "+"), ")/500"
+    )
+  #Underdominance
+  Pheno[5,2] <- paste0("if(", gf$name[gf$Allele1val == 3], "==3,1,0)", collapse = "+")
+  #BDMI
+  Pheno[6,2] <- paste0("if(", gf$name[gf$Allele1val == 5], "+", 
+           sample(gf$name[gf$Allele2val == 7],50), "==24,1,0)", #Shuffle 
+           collapse = "+")
+  
+  gf_ni <- filter(gf, Allele1val == 0.5, Allele2val == 0) #Non-incompat & Non-HI loci
+  
+  #Trait & Preference loci
+  set.seed(rseed+100) # To make randomization repeatable
+  Pheno[2,2] <- paste0(sample(gf_ni$name, 50), collapse = "+")
+  set.seed(rseed+200) # Random genes, while differentiating with above
+  Pheno[3,2] <- paste0(sample(gf_ni$name, 50), collapse = "+")
+  set.seed(rseed+300) # Random genes, while differentiating with above
+  Pheno[4,2] <- paste0(sample(gf_ni$name, 50), collapse = "+")
+  
+  write_tsv(Pheno, paste0("./Config/phenotypes_quant_random", rseed, ".txt"))
   
 }
 
 ```
 
+By running this file on Admix'em, marker file (`markers.txt`) and recombination file (`recomb.txt`) will be made
 
 ```{r}
-
-
-
-
-write_tsv(Pheno, "./Config/phenotypes_learn.txt")  
-
-# Config file
-for(ss in c("obl_posit", "obl_negat")){
-  make_bash(gset = "learn", sexsel = ss) %>% 
-      write(paste0("./Bash/", "learn_", ss, ".sbatch.sh"))
-
-  for(BDMI in s){
-    for(H in s){
-      make_config(gset = "learn", sexsel = ss, bdmi = BDMI, h = H) %>% 
-        write(paste0("./Config/learn_", ss, "_b", BDMI, "h", H, ".cfg"))
-}}}
-
-# By running this file on Admix'em, marker file (`markers.txt`) and recombination file (`recomb.txt`) will be made
-m_chrom <- 2 #Marker per chromosome
-
-paste(
-  "1",        #Generate markers
-  "0.99",     #Random seed
-  chrom_n,    #N of Chromosome 
-  sep = "\n"  #改行
-  ) %>% 
-  cat(
-    ., "\n", file = "./Config/config_marker_learn.txt", 
-    append = FALSE  #Renew file
-    )
-
-for(c in 1:chrom_n){　#Repeat chromosome size
-  cat(
-    chrom_size, "\n", file = "./Config/config_marker_learn.txt",
-    append = TRUE   #Add to existence file
-    )
-  }
-
-paste(
-  chrom_n*m_chrom,   #N of markers
-  "1.0",               #Pop 1 allele freq
-  0,                 #Pop 1 allele freq SD
-  "1.0",               #Pop 2 allele freq
-  0,                 #Pop 2 allele freq SD
-  "markers_learn.txt",     #marker file name
-  "y",                 #Reconbination file
-  4,                 #Reconbination N
-  5,                 #Male female difference
-  "recomb_learn.txt",      #recombination file
-  sep = "\n"
-  ) %>% 
-  cat(., "\n", file = "./Config/config_marker_learn.txt", append = TRUE)
-
-```
-
-# Quantitative trait and preference
-
-```{r}
-
-# g_trait_n <- 16    # N of trait loci
-# paste(g_trait_n, "loci determine courter trait")
-
-# g_pref_n  <- 16     # N of preference loci
-# paste(g_pref_n, "loci determine mate preference peak, with constant choosiness")
-# # trait_n   <- 1      # N of courter trait
-
-chrom_n <- 1 + 20
-paste("Chromosone number (with sex chrom):", chrom_n)
-
-g_chrom <- 10
-paste("Genes per autosome:", g_chrom)
-
-g_total <- 1 + (chrom_n - 1)*g_chrom
-paste("Total number of genes:", g_total)
-
-# Genes file
-gf <- make_genome()
-write_tsv(gf, "./Config/genes_quant.txt")
-
-write_tsv(Pheno, "./Config/phenotypes_quant.txt")  
-
-# Config file
-for(ss in c("constchoosy", "hybridrandom")){
-  make_bash(gset = "quant", sexsel = ss) %>% 
-      write(paste0("./Bash/", "quant_", ss, ".sbatch.sh"))
-
-  for(BDMI in s){
-    for(H in s){
-      make_config(gset = "quant", sexsel = ss, bdmi = BDMI, h = H) %>% 
-        write(paste0("./Config/quant", ss, "_b", BDMI, "h", H, ".cfg"))
-}}}
-
-# By running this file on Admix'em, marker file (`markers.txt`) and recombination file (`recomb.txt`) will be made
 
 m_chrom <- 2 #Marker per chromosome
 
@@ -544,8 +480,7 @@ paste(
   sep = "\n"  #改行
   ) %>% 
   cat(
-    ., "\n", file = "./Config/config_marker_quant.txt", 
-    append = FALSE  #Renew file
+    ., "\n", file = "./Config/config_marker_quant.txt", append = FALSE  #Renew file
     )
 
 for(c in 1:chrom_n){　#Repeat chromosome size
@@ -563,12 +498,44 @@ paste(
   0,                 #Pop 2 allele freq SD
   "markers_quant.txt",     #marker file name
   "y",                 #Reconbination file
-  4,                 #Reconbination N
+  8,                 #Reconbination N
   5,                 #Male female difference
   "recomb_quant.txt",      #recombination file
   sep = "\n"
   ) %>% 
   cat(., "\n", file = "./Config/config_marker_quant.txt", append = TRUE)
+
+```
+
+```{r}
+
+
+write_tsv(Pheno, "./Config/phenotypes_learn.txt")  
+
+# Config file
+for(ss in c("obl_posit", "obl_negat")){
+  make_bash(gset = "learn", sexsel = ss) %>% 
+      write(paste0("./Bash/", "learn_", ss, ".sbatch.sh"))
+
+  for(BDMI in s){
+    for(H in s){
+      make_config(gset = "learn", sexsel = ss, bdmi = BDMI, h = H) %>% 
+        write(paste0("./Config/learn_", ss, "_b", BDMI, "h", H, ".cfg"))
+}}}
+
+
+
+# Config file
+for(ss in c("constchoosy", "hybridrandom")){
+  make_bash(gset = "quant", sexsel = ss) %>% 
+      write(paste0("./Bash/", "quant_", ss, ".sbatch.sh"))
+
+  for(BDMI in s){
+    for(H in s){
+      make_config(gset = "quant", sexsel = ss, bdmi = BDMI, h = H) %>% 
+        write(paste0("./Config/quant", ss, "_b", BDMI, "h", H, ".cfg"))
+}}}
+
 
 ```
 
@@ -594,19 +561,5 @@ find ./ -name "*genes.txt" -delete          #Genes files
 
 ```{r, include=FALSE}
 
-# 
-# 
-# # Phenotype file
-# Pheno[3,2] <- paste0(
-#   gf[2+g_chrom*28, "name"], "+", gf[2+g_chrom*29, "name"], "+", 
-#   gf[2+g_chrom*30, "name"], "+", gf[2+g_chrom*31, "name"], "+", 
-#   gf[2+g_chrom*32, "name"], "+", gf[2+g_chrom*33, "name"], "+", 
-#   gf[2+g_chrom*34, "name"], "+", gf[2+g_chrom*35, "name"], "+", 
-#   gf[2+g_chrom*36, "name"], "+", gf[2+g_chrom*37, "name"], "+", 
-#   gf[2+g_chrom*38, "name"], "+", gf[2+g_chrom*39, "name"], "+", 
-#   gf[2+g_chrom*40, "name"], "+", gf[2+g_chrom*41, "name"], "+", 
-#   gf[2+g_chrom*42, "name"], "+", gf[2+g_chrom*43, "name"]
-#   )
-# 
 
 ```
