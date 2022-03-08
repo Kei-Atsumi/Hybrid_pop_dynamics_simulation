@@ -565,9 +565,8 @@ for(ss in c("obl_posit", "obl_negat", "constchoosy", "hybridrandom")){
 <div style="margin-bottom:90px;">
 </div>
 
-# Complex models
 
-## Choosiness
+# Simulate mate preference function
 
 Here I set preference function as follows:
 
