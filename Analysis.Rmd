@@ -25,6 +25,7 @@ rm(list=ls())  # reset workspace
 pacman::p_load(
  tidyverse
  , RcppRoll  # window functions
+ , survival  # Cox hazard model
  , reshape2
  , foreach   # Pararel
  , knitr     # rmarkdown
@@ -45,54 +46,11 @@ inherit_table <- tibble(
   column_to_rownames("rowname")
 
 
-#' Title: ext_count
-#' Load simulation result and Extract individual count data for each phenotype
-#' @param gset: Genome setting
-#' @param sexsel: Sexual selection style
-#' @param gen: Simulated generations
-ext_count <- function(gset = "", sexsel = "", gens = c(1:100)) {
-  
-  for(bdmi in c(0, 0.1, 0.4, 0.8)) {
-    for(ud in c(0, 0.1, 0.4, 0.8)) {
-      
-      # Load simulation data. Repeat for all generation files
-      foreach(iter = c("0","0_1","0_10","0_100","0_11","0_12","0_13","0_14","0_15","0_16","0_17","0_18","0_19","0_2","0_20","0_21","0_22","0_23","0_24","0_25","0_26","0_27","0_28","0_29","0_3","0_30","0_31","0_32","0_33","0_34","0_35","0_36","0_37","0_38","0_39","0_4","0_40","0_41","0_42","0_43","0_44","0_45","0_46","0_47","0_48","0_49","0_5","0_50","0_51","0_52","0_53","0_54","0_55","0_56","0_57","0_58","0_59","0_6","0_60","0_61","0_62","0_63","0_64","0_65","0_66","0_67","0_68","0_69","0_7","0_70","0_71","0_72","0_73","0_74","0_75","0_76","0_77","0_78","0_79","0_8","0_80","0_81","0_82","0_83","0_84","0_85","0_86","0_87","0_88","0_89","0_9","0_90","0_91","0_92","0_93","0_94","0_95","0_96","0_97","0_98","0_99"), .combine = 'rbind') %do% {
-        
-        #Because generation length vary among params & iters, obtain generation length 
-        maxgen <- length(list.files(
-          paste0("D:/Simulation/Result/", gset, "_", sexsel, "_b", bdmi, "h", ud, "/", iter)
-            ))/2-1
-        
-        foreach(g = 1:maxgen, .combine = 'rbind') %dopar% {  
-          # Read tab delimited files for phenotype
-          read_tsv(paste0("D:/Simulation/Result/", gset, "_", sexsel, "_b", bdmi, "h", ud, "/", iter, "/Gen", g, "_phenotypes.txt"), show_col_types = FALSE) %>%
-            as_tibble %>%  
-            filter(pop == 3) %>%                     # Use only hybrid population
-            dplyr::select("Signal0") %>% 
-            mutate_at("Signal0", as.numeric) %>%     # Group by phenotype
-            mutate_all(as.factor) %>%
-            group_by(Signal0) %>% 
-            summarise(nPheno = length(Signal0)) %>%  # Count indv for each phenotype
-            mutate(
-              nGen = sum(nPheno),
-              Generation = g
-              ) 
-          } %>% 
-          mutate(Iter = iter) #Add column indicating iteration
-        } %>% 
-        mutate(Freq = nPheno/nGen*100) %>% 
-        write_csv(paste0("Data/count_", gset, "_", sexsel, "_b", bdmi, "h", ud, ".csv"))
-    }}
-  
-  }
-
-
 #' Title: ext_stat
 #' Load simulation result and Extract mean & variance from phenostats file
 #' @param gset: Genome setting
 #' @param sexsel: Sexual selection style
-#' @param gen: Simulated generations
-ext_stat <- function(gset = "", sexsel = "") {  #, gens = c(1:100)
+ext_stat <- function(gset = "", sexsel = "") {
   
   for(bdmi in c(0, 0.1, 0.4, 0.8)) { 
     for(ud in c(0, 0.1, 0.4, 0.8)) {
@@ -100,7 +58,7 @@ ext_stat <- function(gset = "", sexsel = "") {  #, gens = c(1:100)
       # Load simulation data. Repeat for all generation files
       foreach(iter = c("0","0_1","0_10","0_100","0_11","0_12","0_13","0_14","0_15","0_16","0_17","0_18","0_19","0_2","0_20","0_21","0_22","0_23","0_24","0_25","0_26","0_27","0_28","0_29","0_3","0_30","0_31","0_32","0_33","0_34","0_35","0_36","0_37","0_38","0_39","0_4","0_40","0_41","0_42","0_43","0_44","0_45","0_46","0_47","0_48","0_49","0_5","0_50","0_51","0_52","0_53","0_54","0_55","0_56","0_57","0_58","0_59","0_6","0_60","0_61","0_62","0_63","0_64","0_65","0_66","0_67","0_68","0_69","0_7","0_70","0_71","0_72","0_73","0_74","0_75","0_76","0_77","0_78","0_79","0_8","0_80","0_81","0_82","0_83","0_84","0_85","0_86","0_87","0_88","0_89","0_9","0_90","0_91","0_92","0_93","0_94","0_95","0_96","0_97","0_98","0_99"), .combine = 'rbind') %do% {
         
-        #Because generation length vary among params & iterations, obtain generation length 
+        #Obtain generation length in each iteration
         maxgen <- length(list.files(
           paste0("D:/Simulation/Result/",gset,"_",sexsel,"_b",bdmi,"h",ud,"/", iter)
             ))/2-1
@@ -138,15 +96,128 @@ mytheme <- theme_bw() + # simple theme
 
 cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#0072B2", "#D55E00", "#CC79A7")
 
+
+
+#' Title: visualise
+#' Visualise simulation result. Need inherit_table
+#' @param gset: Genome setting
+#' @param sexsel: Sexual selection style
+visualise <- function(gset = "", sexsel = "") {  
+
+  inherit_table %>% 
+    kable("html", caption = "**Trait \\ Preference**") %>% 
+    kable_styling("striped", position = "left", full_width = F)
+  
+  inherit_table %>% 
+    rownames_to_column("Trait") %>% 
+    pivot_longer(!Trait, names_to = "Preference", values_to = "Prob") %>% 
+    within(Preference <- factor(Preference, levels = c("PP", "Pp", "pp"))) %>% 
+    within(Trait <- factor(Trait, levels = c("tt", "Tt", "TT"))) %>% 
+    ggplot(aes_string("Preference", "Trait", fill= "Prob")) + 
+      geom_tile(colour = "grey80") +
+      scale_fill_gradient(low = "white", high = "#E60012") +
+      scale_x_discrete(position = "top") +
+      theme_void() +
+      theme(axis.text = element_text(color = "black"))
+  
+  data <- foreach(bdmi = c(0, 0.1, 0.4, 0.8), .combine = 'rbind') %do% {
+    foreach(ud = c(0, 0.1, 0.4, 0.8), .combine = 'rbind') %do% {
+      tmp <- read_csv(show_col_types=FALSE,
+        paste0("Data/mean_", gset, "_", sexsel, "_b", bdmi, "h", ud, ".csv")) %>% 
+        filter(X2 == "Signal0") %>% 
+        select("Iter", "Generation", "X3") %>% 
+        mutate_at("Iter", as.factor) %>% 
+        group_by(Iter)
+      tmp %>% 
+        filter(X3 == "1[0]" | X3 == "0[0]") %>%     #Generations with fixed genotype
+        filter(Generation == min(Generation)) %>%   #Time that genotype was fixed
+        left_join(summarise(tmp, Gen_ext = n()), ., by = "Iter") %>%  #Combine with simul length
+        mutate(s_underdominance = as.factor(ud))  
+      } %>% 
+      mutate(s_bdmi = as.factor(bdmi))  
+    } %>% 
+    rename("Gen_fix" = "Generation", "Genotype" = "X3") %>% 
+    mutate(s = str_c(s_underdominance, s_bdmi, sep = ", "))
+  data$Genotype[data$Genotype == "1[0]"] <- "T"
+  data$Genotype[data$Genotype == "0[0]"] <- "t"
+  
+  summary <- data %>% 
+    group_by(s) %>% 
+    summarise(
+      Survival_rate = sum(Gen_ext == 100)/101*100, #Pops survived for 100 gens
+      "T/t" = sum(Genotype == "T", na.rm = TRUE)/  #Ratio of fixed genotypes
+        (sum(Genotype == "T", na.rm = TRUE) + sum(Genotype == "t", na.rm = TRUE))*100,
+      Polymor_rate = sum(is.na(Genotype) && Gen_ext == 100)/101*100 #Pops kept 2genotypes at 100gen
+    ) %>% 
+    mutate(across(where(is.numeric), round, 0))
+  
+  ggplot(data %>% drop_na_("Gen_fix"), aes_string(x = "s", y = "Gen_fix")) +
+    geom_hline(yintercept = 100) +
+    geom_violin(fill = "grey80", colour = NA) +
+    geom_point(aes_string(colour = "Genotype"), position = "jitter", size = 1) +
+    xlab("s (Underdominance, BDMI)") +  ylab ("Generations to fix") +
+    scale_x_discrete(expand = expansion(mult = c(0.18, 0.05))) +
+    scale_y_continuous(breaks=seq(0, 100, 20)) +
+    annotate(
+      "text", x = c(-0.5,1:16), y = 105, size = 3,
+      label = c("T/t %", summary$"T/t"),
+    ) +
+    annotate(
+      "text", x = c(-0.5,1:16), y = 110, size = 3,
+      label = c("Polymorph", summary$Polymor_rate),
+    ) +
+    annotate(
+      "text", x = c(-0.5,1:16), y = 115, size = 3,
+      label = c("Survival %", summary$Survival_rate),
+    ) +
+    mytheme
+
+}
+
+
 ```
 
 
 
 ```{r}
 
-ext_stat(gset = "dis_unlink", sexsel = "disruptive")
+gset = "dis_unlink"
+sexsel = "pdominance"
+bdmi = 0.8
+
+ 
+for(ud in c(0.4, 0.8)) {
+  
+  # Load simulation data. Repeat for all generation files
+  foreach(iter = c("0","0_1","0_10","0_100","0_11","0_12","0_13","0_14","0_15","0_16","0_17","0_18","0_19","0_2","0_20","0_21","0_22","0_23","0_24","0_25","0_26","0_27","0_28","0_29","0_3","0_30","0_31","0_32","0_33","0_34","0_35","0_36","0_37","0_38","0_39","0_4","0_40","0_41","0_42","0_43","0_44","0_45","0_46","0_47","0_48","0_49","0_5","0_50","0_51","0_52","0_53","0_54","0_55","0_56","0_57","0_58","0_59","0_6","0_60","0_61","0_62","0_63","0_64","0_65","0_66","0_67","0_68","0_69","0_7","0_70","0_71","0_72","0_73","0_74","0_75","0_76","0_77","0_78","0_79","0_8","0_80","0_81","0_82","0_83","0_84","0_85","0_86","0_87","0_88","0_89","0_9","0_90","0_91","0_92","0_93","0_94","0_95","0_96","0_97","0_98","0_99"), .combine = 'rbind') %do% {
+    
+    #Because generation length vary among params & iterations, obtain generation length 
+    maxgen <- length(list.files(
+      paste0("D:/Simulation/Result/",gset,"_",sexsel,"_b",bdmi,"h",ud,"/", iter)
+        ))/2-1
+    
+    foreach(g = 1:maxgen, .combine = 'rbind') %dopar% {  
+    
+      # Read tab delimited files for phenotype from HDD
+      read_tsv(paste0("D:/Simulation/Result/", gset, "_", sexsel, "_b", bdmi, "h", ud, "/", iter, "/Gen", g, "_phenostats.txt"), show_col_types = FALSE, col_names = FALSE) %>%
+        as_tibble %>%  
+        filter(
+          .[1] == 3,
+          .[2] == "Hybridindex" | .[2] == "Pref0" | .[2] == "Signal0"
+          ) %>% 
+        mutate(Generation = g)
+      } %>% 
+      mutate(Iter = iter) #Add column indicating iteration
+    } %>% 
+    select(-"X1") %>%         
+    write_csv(paste0("Data/mean_", gset, "_", sexsel, "_b", bdmi, "h", ud, ".csv"))
+
+}
 
 
+ext_stat(gset = "dis_unlink", sexsel = "recessive")
+ext_stat(gset = "dis_unlink", sexsel = "selfref")
+# ext_stat(gset = "dis_unlink", sexsel = "speriorhyb")
 
 ```
 
@@ -164,55 +235,14 @@ ext_stat(gset = "dis_unlink", sexsel = "disruptive")
 
 ```{r}
 
+cap = "Disatractive hybrids"
+gset = "dis_link"
+sexsel = "disruptive"
+
 # Visualize inheritance pattern
 inherit_table$pp <- c(0.245,0.01,0.745)
 inherit_table$Pp <- c(0.495,0.01,0.495)
 inherit_table$PP <- c(0.745,0.01,0.245)
-inherit_table %>% 
-  kable("html", caption = "**Trait \\ Preference**") %>% 
-  kable_styling("striped", position = "left", full_width = F)
-
-inherit_table %>% 
-  rownames_to_column("Trait") %>% 
-  pivot_longer(!Trait, names_to = "Preference", values_to = "Prob") %>% 
-  within(Preference <- factor(Preference, levels = c("PP", "Pp", "pp"))) %>% 
-  within(Trait <- factor(Trait, levels = c("tt", "Tt", "TT"))) %>% 
-  ggplot(aes(Preference, Trait, fill= Prob)) + 
-    geom_tile(colour = "grey80") +
-    scale_fill_gradient(low = "white", high = "#E60012") +
-    scale_x_discrete(position = "top") +
-    theme_void() +
-    theme(axis.text = element_text(color = "black"))
-  
-
-cap = "Disatractive hybrids"
-gset = "dis_link"
-sexsel = "flip"
-
-data <- foreach(bdmi = c(0, 0.1, 0.4, 0.8), .combine = 'rbind') %do% {
-  foreach(ud = c(0, 0.1, 0.4, 0.8), .combine = 'rbind') %do% {
-    tmp <- read_csv(show_col_types=FALSE,
-      paste0("Data/mean_", gset, "_", sexsel, "_b", bdmi, "h", ud, ".csv")) %>% 
-      filter(X2 == "Signal0") %>% 
-      select("Iter", "Generation", "X3") %>% 
-      mutate_at("Iter", as.factor) %>% 
-      group_by(Iter)
-    tmp %>% 
-      filter(X3 == "1[0]" | X3 == "0[0]") %>%     #Generations with fixed genotype
-      filter(Generation == min(Generation)) %>%   #Time that genotype was fixed
-      rename("Gen_fix" = "Generation", "Genotype" = "X3") %>%  #
-      left_join(summarise(tmp, Gen_ext = n()), ., by = "Iter") %>%  #Combine with simul length
-      mutate(s_underdominance = as.factor(ud))  
-    } %>% 
-    mutate(s_bdmi = as.factor(bdmi))  
-  } %>% 
-  mutate(s = str_c(s_underdominance, s_bdmi, sep = ", "))
-
-ggplot(data, aes(x = s, y = Gen_fix)) +
-  geom_violin(fill = "grey80", colour = NA) +
-  geom_point(aes(colour = Genotype), position = "jitter", size = 1) +
-  xlab("s (Underdominance, BDMI)") +  ylab ("Generations to fix") +
-  mytheme
 
 ```
 
@@ -447,7 +477,7 @@ dat %>% ggplot(aes(x = Generation, y = Signal0, size = Freq)) +
 ```
 
 
-```{r}
+```{r, include=FALSE}
 
 # ggplot(aes(x = Generation, y = Freq, colour = Signal0, group = Signal0)) +
 #   geom_line() +
@@ -463,6 +493,48 @@ dat %>% ggplot(aes(x = Generation, y = Signal0, size = Freq)) +
   #       title = paste(locus, "locus |", cap)
   #       )
   #   )
+
+#' Title: ext_count
+#' Load simulation result and Extract individual count data for each phenotype
+#' @param gset: Genome setting
+#' @param sexsel: Sexual selection style
+#' @param gen: Simulated generations
+ext_count <- function(gset = "", sexsel = "", gens = c(1:100)) {
+  
+  for(bdmi in c(0.1, 0.4, 0.8, 0)) {
+    for(ud in c(0.1, 0.4, 0.8, 0)) {
+      
+      # Load simulation data. Repeat for all generation files
+      foreach(iter = c("0","0_1","0_10","0_100","0_11","0_12","0_13","0_14","0_15","0_16","0_17","0_18","0_19","0_2","0_20","0_21","0_22","0_23","0_24","0_25","0_26","0_27","0_28","0_29","0_3","0_30","0_31","0_32","0_33","0_34","0_35","0_36","0_37","0_38","0_39","0_4","0_40","0_41","0_42","0_43","0_44","0_45","0_46","0_47","0_48","0_49","0_5","0_50","0_51","0_52","0_53","0_54","0_55","0_56","0_57","0_58","0_59","0_6","0_60","0_61","0_62","0_63","0_64","0_65","0_66","0_67","0_68","0_69","0_7","0_70","0_71","0_72","0_73","0_74","0_75","0_76","0_77","0_78","0_79","0_8","0_80","0_81","0_82","0_83","0_84","0_85","0_86","0_87","0_88","0_89","0_9","0_90","0_91","0_92","0_93","0_94","0_95","0_96","0_97","0_98","0_99"), .combine = 'rbind') %do% {
+        
+        #Because generation length vary among params & iters, obtain generation length 
+        maxgen <- length(list.files(
+          paste0("D:/Simulation/Result/", gset, "_", sexsel, "_b", bdmi, "h", ud, "/", iter)
+            ))/2-1
+        
+        foreach(g = 1:maxgen, .combine = 'rbind') %dopar% {  
+          # Read tab delimited files for phenotype
+          read_tsv(paste0("D:/Simulation/Result/", gset, "_", sexsel, "_b", bdmi, "h", ud, "/", iter, "/Gen", g, "_phenotypes.txt"), show_col_types = FALSE) %>%
+            as_tibble %>%  
+            filter(pop == 3) %>%                     # Use only hybrid population
+            dplyr::select("Signal0") %>% 
+            mutate_at("Signal0", as.numeric) %>%     # Group by phenotype
+            mutate_all(as.factor) %>%
+            group_by(Signal0) %>% 
+            summarise(nPheno = length(Signal0)) %>%  # Count indv for each phenotype
+            mutate(
+              nGen = sum(nPheno),
+              Generation = g
+              ) 
+          } %>% 
+          mutate(Iter = iter) #Add column indicating iteration
+        } %>% 
+        mutate(Freq = nPheno/nGen*100) %>% 
+        write_csv(paste0("Data/count_", gset, "_", sexsel, "_b", bdmi, "h", ud, ".csv"))
+    }}
+  
+  }
+
 
 ```
 

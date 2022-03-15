@@ -1,7 +1,7 @@
 #!/bin/bash
 #PBS -N hyb_constchoosy_quant
 #PBS -q blade
-#PBS -l nodes=1:ppn=16,mem=128gb,walltime=48:00:00
+#PBS -l nodes=1:ppn=16,mem=96gb,walltime=48:00:00
 module load gcc
 # Repetition 1 to 100
 REPS=101
@@ -18,56 +18,42 @@ while [ $COUNTERA -lt $REPS ]; do
  let COUNTERB=COUNTERB+1
  # Change random seed ($X->$Y) and output folder (${COUNTERA}->${COUNTERB})
  # Run simulation 
- sed -i -e "s/quant_random$X/quant_random$Y/g" /lustre/k.atsumi/Config/quant_constchoosy_b0.05h0.05.cfg 
- sed -i -e "s/$X/$Y/g" -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" /lustre/k.atsumi/Config/quant_constchoosy_b0.05h0.05.cfg
+ sed -i -e "s/$X/$Y/g" -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" -e "s/quant_random${COUNTERA}/quant_random${COUNTERB}/g" /lustre/k.atsumi/Config/quant_constchoosy_b0.05h0.05.cfg
  /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/quant_constchoosy_b0.05h0.05.cfg & 
- sed -i -e "s/quant_random$X/quant_random$Y/g" /lustre/k.atsumi/Config/quant_constchoosy_b0.05h0.01.cfg 
- sed -i -e "s/$X/$Y/g" -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" /lustre/k.atsumi/Config/quant_constchoosy_b0.05h0.01.cfg
+ sed -i -e "s/$X/$Y/g" -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" -e "s/quant_random${COUNTERA}/quant_random${COUNTERB}/g" /lustre/k.atsumi/Config/quant_constchoosy_b0.05h0.01.cfg
  /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/quant_constchoosy_b0.05h0.01.cfg & 
- sed -i -e "s/quant_random$X/quant_random$Y/g" /lustre/k.atsumi/Config/quant_constchoosy_b0.05h0.005.cfg 
- sed -i -e "s/$X/$Y/g" -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" /lustre/k.atsumi/Config/quant_constchoosy_b0.05h0.005.cfg
+ sed -i -e "s/$X/$Y/g" -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" -e "s/quant_random${COUNTERA}/quant_random${COUNTERB}/g" /lustre/k.atsumi/Config/quant_constchoosy_b0.05h0.005.cfg
  /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/quant_constchoosy_b0.05h0.005.cfg & 
- sed -i -e "s/quant_random$X/quant_random$Y/g" /lustre/k.atsumi/Config/quant_constchoosy_b0.05h0.cfg 
- sed -i -e "s/$X/$Y/g" -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" /lustre/k.atsumi/Config/quant_constchoosy_b0.05h0.cfg
+ sed -i -e "s/$X/$Y/g" -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" -e "s/quant_random${COUNTERA}/quant_random${COUNTERB}/g" /lustre/k.atsumi/Config/quant_constchoosy_b0.05h0.cfg
  /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/quant_constchoosy_b0.05h0.cfg & 
- sed -i -e "s/quant_random$X/quant_random$Y/g" /lustre/k.atsumi/Config/quant_constchoosy_b0.01h0.05.cfg 
- sed -i -e "s/$X/$Y/g" -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" /lustre/k.atsumi/Config/quant_constchoosy_b0.01h0.05.cfg
+ sed -i -e "s/$X/$Y/g" -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" -e "s/quant_random${COUNTERA}/quant_random${COUNTERB}/g" /lustre/k.atsumi/Config/quant_constchoosy_b0.01h0.05.cfg
  /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/quant_constchoosy_b0.01h0.05.cfg & 
- sed -i -e "s/quant_random$X/quant_random$Y/g" /lustre/k.atsumi/Config/quant_constchoosy_b0.01h0.01.cfg 
- sed -i -e "s/$X/$Y/g" -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" /lustre/k.atsumi/Config/quant_constchoosy_b0.01h0.01.cfg
+ sed -i -e "s/$X/$Y/g" -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" -e "s/quant_random${COUNTERA}/quant_random${COUNTERB}/g" /lustre/k.atsumi/Config/quant_constchoosy_b0.01h0.01.cfg
  /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/quant_constchoosy_b0.01h0.01.cfg & 
- sed -i -e "s/quant_random$X/quant_random$Y/g" /lustre/k.atsumi/Config/quant_constchoosy_b0.01h0.005.cfg 
- sed -i -e "s/$X/$Y/g" -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" /lustre/k.atsumi/Config/quant_constchoosy_b0.01h0.005.cfg
+ sed -i -e "s/$X/$Y/g" -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" -e "s/quant_random${COUNTERA}/quant_random${COUNTERB}/g" /lustre/k.atsumi/Config/quant_constchoosy_b0.01h0.005.cfg
  /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/quant_constchoosy_b0.01h0.005.cfg & 
- sed -i -e "s/quant_random$X/quant_random$Y/g" /lustre/k.atsumi/Config/quant_constchoosy_b0.01h0.cfg 
- sed -i -e "s/$X/$Y/g" -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" /lustre/k.atsumi/Config/quant_constchoosy_b0.01h0.cfg
+ sed -i -e "s/$X/$Y/g" -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" -e "s/quant_random${COUNTERA}/quant_random${COUNTERB}/g" /lustre/k.atsumi/Config/quant_constchoosy_b0.01h0.cfg
  /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/quant_constchoosy_b0.01h0.cfg & 
- sed -i -e "s/quant_random$X/quant_random$Y/g" /lustre/k.atsumi/Config/quant_constchoosy_b0.005h0.05.cfg 
- sed -i -e "s/$X/$Y/g" -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" /lustre/k.atsumi/Config/quant_constchoosy_b0.005h0.05.cfg
+ sed -i -e "s/$X/$Y/g" -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" -e "s/quant_random${COUNTERA}/quant_random${COUNTERB}/g" /lustre/k.atsumi/Config/quant_constchoosy_b0.005h0.05.cfg
  /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/quant_constchoosy_b0.005h0.05.cfg & 
- sed -i -e "s/quant_random$X/quant_random$Y/g" /lustre/k.atsumi/Config/quant_constchoosy_b0.005h0.01.cfg 
- sed -i -e "s/$X/$Y/g" -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" /lustre/k.atsumi/Config/quant_constchoosy_b0.005h0.01.cfg
+ sed -i -e "s/$X/$Y/g" -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" -e "s/quant_random${COUNTERA}/quant_random${COUNTERB}/g" /lustre/k.atsumi/Config/quant_constchoosy_b0.005h0.01.cfg
  /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/quant_constchoosy_b0.005h0.01.cfg & 
- sed -i -e "s/quant_random$X/quant_random$Y/g" /lustre/k.atsumi/Config/quant_constchoosy_b0.005h0.005.cfg 
- sed -i -e "s/$X/$Y/g" -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" /lustre/k.atsumi/Config/quant_constchoosy_b0.005h0.005.cfg
+ sed -i -e "s/$X/$Y/g" -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" -e "s/quant_random${COUNTERA}/quant_random${COUNTERB}/g" /lustre/k.atsumi/Config/quant_constchoosy_b0.005h0.005.cfg
  /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/quant_constchoosy_b0.005h0.005.cfg & 
- sed -i -e "s/quant_random$X/quant_random$Y/g" /lustre/k.atsumi/Config/quant_constchoosy_b0.005h0.cfg 
- sed -i -e "s/$X/$Y/g" -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" /lustre/k.atsumi/Config/quant_constchoosy_b0.005h0.cfg
+ sed -i -e "s/$X/$Y/g" -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" -e "s/quant_random${COUNTERA}/quant_random${COUNTERB}/g" /lustre/k.atsumi/Config/quant_constchoosy_b0.005h0.cfg
  /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/quant_constchoosy_b0.005h0.cfg & 
- sed -i -e "s/quant_random$X/quant_random$Y/g" /lustre/k.atsumi/Config/quant_constchoosy_b0h0.05.cfg 
- sed -i -e "s/$X/$Y/g" -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" /lustre/k.atsumi/Config/quant_constchoosy_b0h0.05.cfg
+ sed -i -e "s/$X/$Y/g" -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" -e "s/quant_random${COUNTERA}/quant_random${COUNTERB}/g" /lustre/k.atsumi/Config/quant_constchoosy_b0h0.05.cfg
  /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/quant_constchoosy_b0h0.05.cfg & 
- sed -i -e "s/quant_random$X/quant_random$Y/g" /lustre/k.atsumi/Config/quant_constchoosy_b0h0.01.cfg 
- sed -i -e "s/$X/$Y/g" -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" /lustre/k.atsumi/Config/quant_constchoosy_b0h0.01.cfg
+ sed -i -e "s/$X/$Y/g" -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" -e "s/quant_random${COUNTERA}/quant_random${COUNTERB}/g" /lustre/k.atsumi/Config/quant_constchoosy_b0h0.01.cfg
  /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/quant_constchoosy_b0h0.01.cfg & 
- sed -i -e "s/quant_random$X/quant_random$Y/g" /lustre/k.atsumi/Config/quant_constchoosy_b0h0.005.cfg 
- sed -i -e "s/$X/$Y/g" -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" /lustre/k.atsumi/Config/quant_constchoosy_b0h0.005.cfg
+ sed -i -e "s/$X/$Y/g" -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" -e "s/quant_random${COUNTERA}/quant_random${COUNTERB}/g" /lustre/k.atsumi/Config/quant_constchoosy_b0h0.005.cfg
  /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/quant_constchoosy_b0h0.005.cfg & 
- sed -i -e "s/quant_random$X/quant_random$Y/g" /lustre/k.atsumi/Config/quant_constchoosy_b0h0.cfg 
- sed -i -e "s/$X/$Y/g" -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" /lustre/k.atsumi/Config/quant_constchoosy_b0h0.cfg
+ sed -i -e "s/$X/$Y/g" -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" -e "s/quant_random${COUNTERA}/quant_random${COUNTERB}/g" /lustre/k.atsumi/Config/quant_constchoosy_b0h0.cfg
  /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/quant_constchoosy_b0h0.cfg & 
  wait
  Make new random seed and iteration value
  X=`echo "$X + 0.0001" | bc`
  let COUNTERA=COUNTERA+1
 done 
+
+find /lustre/k.atsumi/Result/quant_constchoosy* -name "Gen*_markers.txt" -or -name "Gen*_genes.txt" -or -name "Gen*_natselprobdump.txt" -or -type f -empty -delete

@@ -168,7 +168,7 @@ make_bash <- function(gset = "", sexsel = "", s = "") {
     "#!/bin/bash",
     paste("#PBS -N hyb", sexsel, gset, sep = "_"),
     "#PBS -q blade",
-    "#PBS -l nodes=1:ppn=16,mem=128gb,walltime=48:00:00",
+    "#PBS -l nodes=1:ppn=16,mem=96gb,walltime=48:00:00",
     "module load gcc",
     "# Repetition 1 to 100",
     "REPS=101",
@@ -194,18 +194,25 @@ make_bash <- function(gset = "", sexsel = "", s = "") {
     for(sh in s){ #Underdominance - against Heterozygotes
       
       if(gset == "quant") {  #Change Genes & Phenotype files used
-        paste0(" sed -i -e \"s/quant_random$X/quant_random$Y/g\" /lustre/k.atsumi/Config/quant_", sexsel, "_b", sb, "h", sh, ".cfg") %>%
+        paste(
+          # Change random seed ($X->$Y) and output folder (${COUNTERA}->${COUNTERB})
+          paste0(" sed -i -e \"s/$X/$Y/g\" -e \"s/rep${COUNTERA}dir/rep${COUNTERB}dir/g\" -e \"s/quant_random${COUNTERA}/quant_random${COUNTERB}/g\" /lustre/k.atsumi/Config/", gset, "_", sexsel, "_b", sb, "h", sh, ".cfg"),
+          # Run simulation
+          paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_b", sb, "h", sh, ".cfg &"),
+          sep = "\n"
+          ) %>%
+          cat(., "\n", append = TRUE, file = f)
+      } else {
+        paste(
+          # Change random seed ($X->$Y) and output folder (${COUNTERA}->${COUNTERB})
+          paste0(" sed -i -e \"s/$X/$Y/g\" -e \"s/rep${COUNTERA}dir/rep${COUNTERB}dir/g\" /lustre/k.atsumi/Config/", gset, "_", sexsel, "_b", sb, "h", sh, ".cfg"),
+          # Run simulation
+          paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_b", sb, "h", sh, ".cfg &"),
+          sep = "\n"
+          ) %>%
           cat(., "\n", append = TRUE, file = f)
       }
       
-      paste(
-        # Change random seed ($X->$Y) and output folder (${COUNTERA}->${COUNTERB})
-        paste0(" sed -i -e \"s/$X/$Y/g\" -e \"s/rep${COUNTERA}dir/rep${COUNTERB}dir/g\" /lustre/k.atsumi/Config/", gset, "_", sexsel, "_b", sb, "h", sh, ".cfg"),
-        # Run simulation
-        paste0(" /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/", gset, "_", sexsel, "_b", sb, "h", sh, ".cfg &"),
-        sep = "\n"
-        ) %>%
-        cat(., "\n", append = TRUE, file = f)
     }}
 
   paste(
@@ -214,6 +221,11 @@ make_bash <- function(gset = "", sexsel = "", s = "") {
     " X=`echo \"$X + 0.0001\" | bc`",
     " let COUNTERA=COUNTERA+1",
     "done",
+    paste0(
+      "find /lustre/k.atsumi/Result/",
+      gset, "_", sexsel,
+      "* -name \"Gen*_markers.txt\" -or -name \"Gen*_genes.txt\" -or -name \"Gen*_natselprobdump.txt\" -or -type f -empty -delete #Erase unuse files"
+      ),
     sep = "\n"
     ) %>%
     cat(., "\n", append = TRUE, file = f)
@@ -584,13 +596,19 @@ Draw preference function in several promiscuity
 
 ```{r}
 
-for(P in c(5, 7, 9, 11, 15)){
+for(P in seq(15, 30, by = 5)){
   curve(  
     # Function
     1/exp( ( x^2 )/( P^2 ) ) , 
     # Plot range
     from = -50, to = 50, ylim = c(0,1), 
-    main = paste("Promiscuity =", P)
+    main = paste("Promiscuity =", P),
+    sub = paste0(
+      "Probability for mating with another parental pop: ", 
+      round(1/exp((50^2)/(P^2))*100,1), "%"
+      ),
+    ylab = "Mating prob",
+    xlab = "Courter trait value - Most prefered trait value"
     )
 }
 
@@ -600,7 +618,7 @@ for(P in c(5, 7, 9, 11, 15)){
 
 ```{r}
 
-for(P in c(17, 19, 21, 23)){
+for(P in seq(15, 30, by = 5)){
   curve(  
     # Function
     1-exp( -( x^2 )/( P^2 ) ) , 
@@ -618,8 +636,8 @@ for(P in c(17, 19, 21, 23)){
 ```{r}
 
 # Choosiness reduction model
-for(P in c(1, 5, 10, 15, 20, 24)){   #Courter genotype
-  a <- 90
+for(P in seq(0, 25, by = 5)){   #Courter genotype
+  a <- 300
   curve(  
     # Function
     1/exp( ( x^2 )/(  (a/(P-25)) ^2 ) ) , 
@@ -641,11 +659,12 @@ for(P in c(1, 5, 10, 15, 20, 24)){   #Courter genotype
 Remove unused result files
 
 ```
-cd /lustre/k.atsumi
 # Remove all marker, genes, natselprobdump files in the subdirectories
-find ./ -name "*markers.txt" -delete        #Marker files
-find ./ -name "*natselprobdump.txt" -delete #? Unused fle
-find ./ -name "*genes.txt" -delete          #Genes files
+find {My directory} -name "*markers.txt" 
+  -or -name "*natselprobdump.txt" 
+  -or -name "*genes.txt" 
+  -or -type f -empty
+  -delete        
 ```
 
 
