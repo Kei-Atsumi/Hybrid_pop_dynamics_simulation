@@ -1,7 +1,7 @@
 #!/bin/bash
 #PBS -N hyb_disruptive_dis_link
 #PBS -q blade
-#PBS -l nodes=1:ppn=16,mem=128gb,walltime=48:00:00
+#PBS -l nodes=1:ppn=16,mem=96gb,walltime=48:00:00
 module load gcc
 # Repetition 1 to 100
 REPS=101
@@ -13,45 +13,37 @@ Y=.1356
 COUNTERA=0
 COUNTERB=0
 while [ $COUNTERA -lt $REPS ]; do
- echo "$COUNTERA"
  Y=`echo "$Y + 0.0001" | bc`
  let COUNTERB=COUNTERB+1
  # Change random seed ($X->$Y) and output folder (${COUNTERA}->${COUNTERB})
  # Run simulation 
- sed -i -e "s/$X/$Y/g" -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" /lustre/k.atsumi/Config/dis_link_disruptive_b0h0.cfg
- /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/dis_link_disruptive_b0h0.cfg & 
- sed -i -e "s/$X/$Y/g" -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" /lustre/k.atsumi/Config/dis_link_disruptive_b0h0.1.cfg
- /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/dis_link_disruptive_b0h0.1.cfg & 
- sed -i -e "s/$X/$Y/g" -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" /lustre/k.atsumi/Config/dis_link_disruptive_b0h0.4.cfg
- /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/dis_link_disruptive_b0h0.4.cfg & 
- sed -i -e "s/$X/$Y/g" -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" /lustre/k.atsumi/Config/dis_link_disruptive_b0h0.8.cfg
- /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/dis_link_disruptive_b0h0.8.cfg & 
- sed -i -e "s/$X/$Y/g" -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" /lustre/k.atsumi/Config/dis_link_disruptive_b0.1h0.cfg
- /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/dis_link_disruptive_b0.1h0.cfg & 
- sed -i -e "s/$X/$Y/g" -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" /lustre/k.atsumi/Config/dis_link_disruptive_b0.1h0.1.cfg
- /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/dis_link_disruptive_b0.1h0.1.cfg & 
- sed -i -e "s/$X/$Y/g" -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" /lustre/k.atsumi/Config/dis_link_disruptive_b0.1h0.4.cfg
- /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/dis_link_disruptive_b0.1h0.4.cfg & 
- sed -i -e "s/$X/$Y/g" -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" /lustre/k.atsumi/Config/dis_link_disruptive_b0.1h0.8.cfg
- /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/dis_link_disruptive_b0.1h0.8.cfg & 
- sed -i -e "s/$X/$Y/g" -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" /lustre/k.atsumi/Config/dis_link_disruptive_b0.4h0.cfg
- /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/dis_link_disruptive_b0.4h0.cfg & 
- sed -i -e "s/$X/$Y/g" -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" /lustre/k.atsumi/Config/dis_link_disruptive_b0.4h0.1.cfg
- /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/dis_link_disruptive_b0.4h0.1.cfg & 
- sed -i -e "s/$X/$Y/g" -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" /lustre/k.atsumi/Config/dis_link_disruptive_b0.4h0.4.cfg
- /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/dis_link_disruptive_b0.4h0.4.cfg & 
- sed -i -e "s/$X/$Y/g" -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" /lustre/k.atsumi/Config/dis_link_disruptive_b0.4h0.8.cfg
- /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/dis_link_disruptive_b0.4h0.8.cfg & 
- sed -i -e "s/$X/$Y/g" -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" /lustre/k.atsumi/Config/dis_link_disruptive_b0.8h0.cfg
- /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/dis_link_disruptive_b0.8h0.cfg & 
- sed -i -e "s/$X/$Y/g" -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" /lustre/k.atsumi/Config/dis_link_disruptive_b0.8h0.1.cfg
- /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/dis_link_disruptive_b0.8h0.1.cfg & 
- sed -i -e "s/$X/$Y/g" -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" /lustre/k.atsumi/Config/dis_link_disruptive_b0.8h0.4.cfg
- /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/dis_link_disruptive_b0.8h0.4.cfg & 
- sed -i -e "s/$X/$Y/g" -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" /lustre/k.atsumi/Config/dis_link_disruptive_b0.8h0.8.cfg
- /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/dis_link_disruptive_b0.8h0.8.cfg & 
+ sed -i -e "s/$X/$Y/g" -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" /lustre/k.atsumi/Config/dis_link_disruptive_b0h0.5.cfg
+ /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/dis_link_disruptive_b0h0.5.cfg & 
+ sed -i -e "s/$X/$Y/g" -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" /lustre/k.atsumi/Config/dis_link_disruptive_b0h0.6.cfg
+ /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/dis_link_disruptive_b0h0.6.cfg & 
+ sed -i -e "s/$X/$Y/g" -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" /lustre/k.atsumi/Config/dis_link_disruptive_b0h0.7.cfg
+ /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/dis_link_disruptive_b0h0.7.cfg & 
+ sed -i -e "s/$X/$Y/g" -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" /lustre/k.atsumi/Config/dis_link_disruptive_b0.1h0.5.cfg
+ /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/dis_link_disruptive_b0.1h0.5.cfg & 
+ sed -i -e "s/$X/$Y/g" -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" /lustre/k.atsumi/Config/dis_link_disruptive_b0.1h0.6.cfg
+ /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/dis_link_disruptive_b0.1h0.6.cfg & 
+ sed -i -e "s/$X/$Y/g" -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" /lustre/k.atsumi/Config/dis_link_disruptive_b0.1h0.7.cfg
+ /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/dis_link_disruptive_b0.1h0.7.cfg & 
+ sed -i -e "s/$X/$Y/g" -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" /lustre/k.atsumi/Config/dis_link_disruptive_b0.4h0.5.cfg
+ /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/dis_link_disruptive_b0.4h0.5.cfg & 
+ sed -i -e "s/$X/$Y/g" -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" /lustre/k.atsumi/Config/dis_link_disruptive_b0.4h0.6.cfg
+ /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/dis_link_disruptive_b0.4h0.6.cfg & 
+ sed -i -e "s/$X/$Y/g" -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" /lustre/k.atsumi/Config/dis_link_disruptive_b0.4h0.7.cfg
+ /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/dis_link_disruptive_b0.4h0.7.cfg & 
+ sed -i -e "s/$X/$Y/g" -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" /lustre/k.atsumi/Config/dis_link_disruptive_b0.8h0.5.cfg
+ /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/dis_link_disruptive_b0.8h0.5.cfg & 
+ sed -i -e "s/$X/$Y/g" -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" /lustre/k.atsumi/Config/dis_link_disruptive_b0.8h0.6.cfg
+ /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/dis_link_disruptive_b0.8h0.6.cfg & 
+ sed -i -e "s/$X/$Y/g" -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" /lustre/k.atsumi/Config/dis_link_disruptive_b0.8h0.7.cfg
+ /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/dis_link_disruptive_b0.8h0.7.cfg & 
  wait
- Make new random seed and iteration value
+ # Make new random seed and iteration value
  X=`echo "$X + 0.0001" | bc`
  let COUNTERA=COUNTERA+1
-done 
+done
+find /lustre/k.atsumi/Result/dis_link_disruptive* -name "Gen*_markers.txt" -or -name "Gen*_genes.txt" -or -name "Gen*_natselprobdump.txt" -or -type f -empty -delete #Erase unuse files 

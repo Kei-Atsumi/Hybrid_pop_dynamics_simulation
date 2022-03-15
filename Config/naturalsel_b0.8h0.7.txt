@@ -1,0 +1,4 @@
+Population	Gen	Selection
+species1	-1	1
+species2	-1	1
+hyb	-1	b=0.8, u=0.7, if(BDMI==30 && Underdominance==0.5, 1-b-u+b*u, if(BDMI==30 && Underdominance!=0.5, 1-b, if(BDMI!=30 && Underdominance=0.5, 1-u, 1)))

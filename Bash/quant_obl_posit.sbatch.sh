@@ -1,3 +1,4 @@
+
 #!/bin/bash
 #PBS -N hyb_obl_posit_quant
 #PBS -q blade
@@ -13,7 +14,6 @@ Y=.1356
 COUNTERA=0
 COUNTERB=0
 while [ $COUNTERA -lt $REPS ]; do
- echo "$COUNTERA"
  Y=`echo "$Y + 0.0001" | bc`
  let COUNTERB=COUNTERB+1
  # Change random seed ($X->$Y) and output folder (${COUNTERA}->${COUNTERB})
@@ -51,9 +51,8 @@ while [ $COUNTERA -lt $REPS ]; do
  sed -i -e "s/$X/$Y/g" -e "s/rep${COUNTERA}dir/rep${COUNTERB}dir/g" -e "s/quant_random${COUNTERA}/quant_random${COUNTERB}/g" /lustre/k.atsumi/Config/quant_obl_posit_b0h0.cfg
  /lustre/k.atsumi/admixem/bin/admixemp /lustre/k.atsumi/Config/quant_obl_posit_b0h0.cfg & 
  wait
- Make new random seed and iteration value
+ # Make new random seed and iteration value
  X=`echo "$X + 0.0001" | bc`
  let COUNTERA=COUNTERA+1
-done 
-
-find /lustre/k.atsumi/Result/quant_obl_posit* -name "Gen*_markers.txt" -or -name "Gen*_genes.txt" -or -name "Gen*_natselprobdump.txt" -or -type f -empty -delete
+done
+find /lustre/k.atsumi/Result/quant_obl_posit* -name "Gen*_markers.txt" -or -name "Gen*_genes.txt" -or -name "Gen*_natselprobdump.txt" -or -type f -empty -delete #Erase unuse files 
