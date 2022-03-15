@@ -160,7 +160,7 @@ make_config <- function(
 #' @param gen: Generations
 #' @param mig: Migration in each >1 generation
 #' @param maten: Sampled mate
-make_bash <- function(gset = "", sexsel = "", s = "") {
+make_bash <- function(gset = "", sexsel = "", s = "", s2 = "") {
 
   f = paste0("./Bash/", gset, "_", sexsel, ".sbatch.sh") #Output file name
     
@@ -180,7 +180,6 @@ make_bash <- function(gset = "", sexsel = "", s = "") {
     "COUNTERA=0",
     "COUNTERB=0",
     "while [ $COUNTERA -lt $REPS ]; do",
-    " echo \"$COUNTERA\"",
     " Y=`echo \"$Y + 0.0001\" | bc`",
     " let COUNTERB=COUNTERB+1",
     " # Change random seed ($X->$Y) and output folder (${COUNTERA}->${COUNTERB})",
@@ -191,7 +190,7 @@ make_bash <- function(gset = "", sexsel = "", s = "") {
   
   #Repeat for each combinaiton of incompatibilities (BDMI, Underdominance)
   for(sb in s){   #BDMI
-    for(sh in s){ #Underdominance - against Heterozygotes
+    for(sh in s2){ #Underdominance - against Heterozygotes
       
       if(gset == "quant") {  #Change Genes & Phenotype files used
         paste(
@@ -217,7 +216,7 @@ make_bash <- function(gset = "", sexsel = "", s = "") {
 
   paste(
     " wait",
-    " Make new random seed and iteration value",
+    " # Make new random seed and iteration value",
     " X=`echo \"$X + 0.0001\" | bc`",
     " let COUNTERA=COUNTERA+1",
     "done",
@@ -256,10 +255,11 @@ make_bash <- function(gset = "", sexsel = "", s = "") {
 ```{r}
 
 # Variation in selection strength
-nats <- c(0, 0.1, 0.4, 0.8)
+s_b <- c(0, 0.1, 0.4, 0.8)
+s_h <- c(0.5, 0.6, 0.7)
 
-for(bdmi in nats){
-  for(ud in nats){
+for(bdmi in s_b){
+  for(ud in s_h){
     paste(
       "Population\tGen\tSelection",
       "species1\t-1\t1",
@@ -351,10 +351,10 @@ write_tsv(Pheno, "./Config/phenotypes_dis_link.txt")
 
 for(genomeset in c("dis_unlink", "dis_link")){
   for(ss in c("speriorhyb", "disruptive", "flip", "heterorandom", "pdominance", "recessive", "selfref")){
-    make_bash(gset = genomeset, sexsel = ss, s = nats)
+    make_bash(gset = genomeset, sexsel = ss, s = s_b, s2 = s_h)
     
-    for(BDMI in nats){
-      for(H in nats){
+    for(BDMI in s_b){
+      for(H in s_h){
         make_config(gset = genomeset, sexsel = ss, bdmi = BDMI, h = H) %>% 
           write(paste0("./Config/", genomeset, "_", ss, "_b", BDMI, "h", H, ".cfg"))
   }}}}
@@ -418,7 +418,7 @@ Choosiness, Peak preference, Traits & Hybrid index are determined by 50 loci, re
 
 ```{r}
 
-chrom_size <- 1*10^7
+chrom_size <- 1*10^6
 paste("Chromosone size (bp):", chrom_size)
 
 chrom_n <- 1 + 25
@@ -556,6 +556,7 @@ for(bdmi in nats){
 
 ```
 
+## Make config & bash files
 
 ```{r}
 
@@ -596,7 +597,7 @@ Draw preference function in several promiscuity
 
 ```{r}
 
-for(P in seq(15, 30, by = 5)){
+for(P in seq(10, 25, by = 5)){
   curve(  
     # Function
     1/exp( ( x^2 )/( P^2 ) ) , 
@@ -605,7 +606,7 @@ for(P in seq(15, 30, by = 5)){
     main = paste("Promiscuity =", P),
     sub = paste0(
       "Probability for mating with another parental pop: ", 
-      round(1/exp((50^2)/(P^2))*100,1), "%"
+      round(1/exp((50^2)/(P^2))*100,3), "%"
       ),
     ylab = "Mating prob",
     xlab = "Courter trait value - Most prefered trait value"
@@ -666,7 +667,6 @@ find {My directory} -name "*markers.txt"
   -or -type f -empty
   -delete        
 ```
-
 
 # Old codes
 
